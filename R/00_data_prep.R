@@ -14,6 +14,8 @@ library(tidyverse)
 library(janitor)
 library(timetk)
 library(lubridate)
+library(dtplyr)
+library(data.table)
 library(DBI)
 
 # **********************************************************************************************
@@ -23,14 +25,16 @@ library(DBI)
 
 # * Setup DB Connection ----
 con <- dbConnect(RSQLite::SQLite(), dbname = "../data/database.db")
-dbWriteTable(con, "retail_data_raw", read.csv("../data/online_retail_II.csv"))
+
+# * Save CSV to DB ----
+# dbWriteTable(con, "retail_data_raw", read.csv("../data/online_retail_II.csv"))
 dbListTables(con)
 
+
 # **********************************************************************************************
-# CLEAN DATA ----
+# DATA PREP 1 ----
 # - Clean data and load back to DB
 # **********************************************************************************************
-
 retail_data_raw_tbl <- tbl(con, "retail_data_raw") %>% 
     as_tibble() %>% 
     clean_names()
@@ -42,6 +46,33 @@ retail_data_clean_tbl <- retail_data_raw_tbl %>%
     mutate(description = description %>% str_replace_all("[^[:alnum:]]", "")) %>% 
     filter(!country %in% c(
         "EIRE", "Channel Islands", "RSA", "West Indies"
-    ))
+    )) %>% 
+    mutate(date = date(invoice_date)) %>% 
+    mutate(date = ymd(date)) %>% 
+    filter(date <= as.Date("2011-11-30"))
 
-dbWriteTable(con, "retial_data_clean", retail_data_clean_tbl)
+# dbWriteTable(con, "retail_data_clean_tbl", retail_data_clean_tbl, overwrite = TRUE)
+
+
+# **********************************************************************************************
+# DATA PREP 2 ----
+# - First Purchase Data
+# **********************************************************************************************
+
+first_purchase_tbl <- retail_data_clean_tbl %>% 
+    select(date, customer_id) %>% 
+    distinct() %>% 
+    lazy_dt() %>% 
+    group_by(customer_id) %>% 
+    slice_min(date) %>% 
+    ungroup() %>% 
+    as_tibble() %>% 
+    mutate(flag = case_when(
+        date < as.Date("2011-08-01") ~ "Old",
+        TRUE                         ~ "New"
+    )) 
+
+# dbWriteTable(con, "first_purchase_tbl", first_purchase_tbl, overwrite = TRUE)
+
+
+
