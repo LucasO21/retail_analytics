@@ -23,6 +23,7 @@ library(DBI)
 # ** Modeling ----
 library(brevis)
 library(tidymodels)
+library(vip)
 
 
 # ******************************************************************************
@@ -33,120 +34,95 @@ library(tidymodels)
 con <- dbConnect(RSQLite::SQLite(), dbname = "../data/database.db")
 dbListTables(con)
 
-# * Load Data ----
-sales_tbl <- tbl(con, "retial_data_clean") %>% 
+# * First Purchase Data ----
+first_purchase_tbl <- tbl(con, "first_purchase_tbl") %>% collect()
+
+# * RFM Segment Data ----
+rfm_segment_tbl <- tbl(con, "rfm_segment_tbl") %>% collect()
+
+# * Load Sales Data ----
+sales_tbl <- tbl(con, "retail_data_clean_tbl") %>% 
     collect() %>% 
     mutate(invoice_date = date(invoice_date)) %>% 
     mutate(invoice_date = ymd(invoice_date)) %>% 
-    mutate(revenue = quantity * price)
-
-sales_daily_agg_tbl <- sales_tbl %>% 
-    group_by(customer_id) %>% 
-    summarise_by_time(
-        .date_var = invoice_date,
-        .by = "day",
-        total_revenue = sum(revenue)
-    ) %>% 
-    ungroup() 
-
-sales_daily_invoice_agg_tbl <- sales_tbl %>% 
-    group_by(customer_id, invoice) %>% 
-    summarise_by_time(
-        .date_var = invoice_date,
-        .by = "day",
-        total_revenue = sum(revenue)
-    ) %>% 
-    ungroup() 
+    mutate(sales = quantity * price) 
 
 
 # ******************************************************************************
 # DATA PREP ----
 # ******************************************************************************
 
-rfm_segment_tbl <- tbl(con, "rfm_segment_tbl") %>% 
-    select(customer_id, segment) %>% 
-    distinct() %>% 
-    collect()
+sales_tbl <- sales_tbl %>% 
+    left_join(first_purchase_tbl %>% select(customer_id, flag)) %>% 
+    filter(flag == "Old") %>% 
+    select(-flag)
 
-# * First Purchase Tibble ----
-first_purchase_tbl <- sales_tbl %>% 
-    select(invoice_date, customer_id) %>% 
-    distinct() %>% 
+revenue_quarterly_tbl <- sales_tbl %>% 
     lazy_dt() %>% 
-    group_by(customer_id) %>% 
-    slice_min(invoice_date) %>% 
+    mutate(
+        quarter = paste(
+            paste0("Q",lubridate::quarter(invoice_date)),
+            lubridate::year(invoice_date), 
+            sep = "_"
+        )
+    ) %>% 
+    group_by(customer_id, quarter) %>% 
+    summarise(
+        sum_sales      = sum(sales),
+        avg_sales      = mean(sales),
+        count          = n()
+    ) %>% 
     ungroup() %>% 
-    as_tibble()
+    as_tibble() %>% 
+    mutate(quarter = quarter %>% fct_relevel(
+        "Q4_2009", "Q1_2010", "Q2_2010", "Q3_2010", "Q4_2010", "Q1_2011",
+        "Q2_2011", "Q3_2011", "Q4_2011"
+    ))
 
-first_purchase_tbl %>% 
-    pull(invoice_date) %>% 
-    range()
+quarter_tbl <- revenue_quarterly_tbl %>% 
+    distinct(quarter) %>% 
+    arrange(quarter) %>% 
+    bind_cols(
+        tibble(
+            q = c("Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7", "Q8", "Q9")
+        )
+    ) %>% 
+    mutate(quarter = factor(quarter))
 
-first_purchase_tbl %>% 
-    arrange(invoice_date) %>% 
-    mutate(flag = ifelse(invoice_date >= as.Date("2010-03-01"), "yes", "no")) %>% 
-    count(flag)
 
-# ** Save First Purchase Tibble ----
-# dbWriteTable(con, "first_purchase_tbl", first_purchase_tbl, overwrite = TRUE)
+sales_quarterly_wide_tbl <- revenue_quarterly_tbl %>% 
+    left_join(quarter_tbl) %>% 
+    rename(quarter_no = q) %>% 
+    filter(quarter_no %in% c("Q9", "Q8", "Q7", "Q6")) %>% 
+    select(-quarter) %>% 
+    pivot_longer(
+        cols = c(sum_sales, avg_sales, count)
+    ) %>% 
+    mutate(flag = case_when(
+        quarter_no == "Q9" & name == "avg_sales" ~ 1,
+        quarter_no == "Q9" & name == "count"     ~ 1,
+        TRUE                                     ~ 0
+    )) %>% 
+    filter(flag == 0) %>% 
+    select(-flag) %>% 
+    mutate(name_2 = paste(name, quarter_no, sep = "_")) %>% 
+    select(-name, -quarter_no) %>% 
+    pivot_wider(names_from = name_2, values_from = value, values_fill = 0)
 
-# * Set Cohort Span ----
-start_date <- as.Date("2010-01-01")
-end_date   <- as.Date("2010-03-31")
-
-cohort_list <- first_purchase_tbl %>% 
-    filter(invoice_date %>% between(start_date, end_date)) %>% 
-    distinct(customer_id) %>% 
-    pull(customer_id)
-
-cohort_tbl <- sales_tbl %>% 
-    filter(customer_id %in% cohort_list) %>% 
+model_ready_tbl <- sales_quarterly_wide_tbl %>% 
     left_join(
-        rfm_segment_tbl
+        rfm_segment_tbl %>% 
+            select(customer_id, recency_days, segment)
     ) %>% 
-    filter(!segment %in% "Slipping")
+    rename(sum_sales_3m = sum_sales_Q9) %>% 
+    mutate(flag_sales_3m = if_else(sum_sales_3m > 0, 1, 0)) %>% 
+    select(customer_id, starts_with("sum"), starts_with("avg"),
+           starts_with("count"), everything())
+    
 
-cohort_tbl %>% arrange(desc(invoice_date))
-first_purchase_tbl %>% filter(customer_id == 13821)
 
 
-# dbWriteTable(con, "cohort_tbl", cohort_tbl, overwrite = TRUE)
 
-# * Visualize Revenue by RFM Segments ----
-cohort_tbl %>% 
-    group_by(segment) %>% 
-    summarise_by_time(
-        .date_var     =  invoice_date, 
-        .by           = "month", 
-        total_revenue = sum(revenue, na.rm = TRUE)
-    ) %>% 
-    plot_time_series(
-        .date_var    = invoice_date, 
-        .value       = total_revenue, 
-        .y_intercept = 0, 
-        .facet_ncol  = 2
-    )
-
-# * Visualize a Sample of Customers ----
-n   <- 10
-ids <- cohort_list[1:10]
-
-cohort_tbl %>% 
-    filter(customer_id %in% ids) %>% 
-    group_by(customer_id) %>% 
-    summarise_by_time(invoice_date, "day", revenue = sum(revenue)) %>% 
-    plot_time_series(
-        invoice_date, revenue, 
-        .interactive = FALSE,
-        .smooth = FALSE,
-        .facet_ncol = 2
-    )+
-    geom_point(color = "black")
-
-cohort_tbl %>% 
-    filter(customer_id == 12373) %>% 
-    summarise_by_time(invoice_date, "day", revenue = sum(revenue)) %>% 
-    plot_time_series(invoice_date, revenue)
 
 # ******************************************************************************
 # MODELING ----
@@ -157,24 +133,24 @@ cohort_tbl %>%
 
 # * Data Splitting ----
 set.seed(123)
-train_ids_list <- cohort_tbl %>% 
+train_ids_list <- revenue_daily_tbl %>% 
     pull(customer_id) %>% 
     unique() %>% 
     sample(size = round(0.8 * length(.))) %>% 
     sort()
 
 # ** Split 1 (Non - Sequential) ----
-split_1_train_tbl <- cohort_tbl %>% 
+split_1_train_tbl <- revenue_daily_tbl %>% 
     filter(customer_id %in% train_ids_list)
 
-split_1_test_tbl <- cohort_tbl %>% 
+split_1_test_tbl <- revenue_daily_tbl %>% 
     filter(!customer_id %in% train_ids_list)
 
 # ** Split 2 (Sequential) ----
 split_2_train <- time_series_split(
     data        = split_1_train_tbl,
     date_var    = invoice_date, 
-    assess      = "10 days",
+    assess      = "90 days",
     cummulative = TRUE
 )
 
