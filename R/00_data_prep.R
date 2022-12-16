@@ -68,21 +68,25 @@ first_purchase_tbl <- retail_data_clean_tbl %>%
     slice_min(date) %>% 
     ungroup() %>% 
     as_tibble() %>% 
-    mutate(flag = case_when(
-        date < as.Date("2011-08-01") ~ "Old",
-        TRUE                         ~ "New"
-    )) %>% 
-    select(-date)
+    mutate(quarter_start = round_date(date, "3 months")) %>% 
+    mutate(quarter_start = lubridate::ymd(quarter_start)) %>% 
+    mutate(year = year(quarter_start)) %>% 
+    mutate(quarter = quarter(quarter_start)) %>% 
+    mutate(
+        first_purchase_cohort = str_glue("Q{quarter}-{year}") 
+        %>% as.factor()
+    ) %>% 
+    left_join(
+        retail_data_clean_tbl %>% 
+            select(customer_id, country) %>% 
+            distinct()
+    ) %>% 
+    select(customer_id, date, quarter_start, first_purchase_cohort, country) %>% 
+    rename(
+        first_purchase_date = date,
+        first_purchase_quarter = quarter_start
+    ) %>% 
+    mutate_if(is.Date, as.character)
 
 # dbWriteTable(con, "first_purchase_tbl", first_purchase_tbl, overwrite = TRUE)
 
-# **********************************************************************************************
-# DATA PREP 3 ----
-# - Country Data
-# **********************************************************************************************
-
-country_tbl <- retail_data_clean_tbl %>% 
-    select(customer_id, country) %>% 
-    distinct()
-
-# dbWriteTable(con, "country_tbl", country_tbl, overwrite = TRUE)
