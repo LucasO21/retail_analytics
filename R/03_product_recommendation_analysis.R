@@ -119,7 +119,7 @@ data <- user_item_matrix
 
 get_user_to_user_cosine_matrix <- function(data){
 
-    matrix <- cosine(
+    user_to_user_matrix <- matrix <- cosine(
         as.matrix(
             t(data[, 2:dim(data)[2]])
         )
@@ -146,22 +146,22 @@ user_to_user_matrix <- get_user_to_user_cosine_matrix(data = user_item_matrix)
 
 data         <- user_to_user_matrix
 .customer_id <- "13305"
-n_closest    <- 2
+n_closest    <- 5
 
 get_user_product_recommendations <- function(data, .customer_id, n_closest){
     
     # N similar customers to customer A
-    top_10_sim_customers_to_customer_a <- data %>%
+    top_n_closest_customers_to_customer_a <- data %>%
         filter(customer_id == .customer_id) %>%
         gather() %>%
         filter(!str_detect(key, "customer_id")) %>%
         arrange(desc(value)) %>%
         filter(!value == 0) %>% 
-        slice(2:n) %>% 
+        slice(2:(n_closest + 1)) %>% 
         `colnames<-`(c("customer_id", "cosine_similarity_value"))
     
     # Closest customer list
-    n_closest_list <- top_10_sim_customers_to_customer_a %>% pull(customer_id)
+    n_closest_list <- top_n_closest_customers_to_customer_a %>% pull(customer_id)
     
     # Items bought by customer A
     items_bought_by_customer_a <- get_user_item_matrix(data = analysis_cohort_tbl) %>% 
@@ -173,8 +173,8 @@ get_user_product_recommendations <- function(data, .customer_id, n_closest){
         sort()
     
     # Items bought by customer B
-    items_bought_by_customer_b <- get_user_item_matrix(data = analysis_cohort_tbl) %>% 
-        filter(customer_id == n_closest_list[n_closest]) %>% 
+    items_bought_by_closest_customers <- get_user_item_matrix(data = analysis_cohort_tbl) %>% 
+        filter(customer_id %in% n_closest_list) %>% 
         select(-customer_id) %>% 
         gather() %>% 
         filter(value == 1) %>% 
@@ -183,7 +183,7 @@ get_user_product_recommendations <- function(data, .customer_id, n_closest){
     
     # Items to recommend to A (list)
     items_to_recommend_to_customer_a <- setdiff(
-        items_bought_by_customer_b, 
+        items_bought_by_closest_customers, 
         items_bought_by_customer_a
     )
     
@@ -198,16 +198,16 @@ get_user_product_recommendations <- function(data, .customer_id, n_closest){
         )
     
     # Opportunity (table)
-    opportunity_tbl <- retail_data_clean_tbl %>% 
-        filter(customer_id == customer_b) %>% 
-        filter(stock_code %in% items_bought_by_customer_b) %>% 
+    opportunity_tbl <- analysis_cohort_tbl %>% 
+        filter(customer_id %in% n_closest_list) %>% 
+        filter(stock_code %in% items_bought_by_closest_customers) %>% 
         group_by(stock_code, description) %>% 
         summarise(
-            quantity = sum(quantity),
-            sales    = sum(sales)
+            mean_quantity = mean(quantity),
+            mean_sales    = mean(sales)
         ) %>% 
         ungroup() %>% 
-        arrange(desc(sales))
+        arrange(desc(mean_sales))
     
     # Final product recommender (table)
     final_recommend_tbl <- items_to_recommend_tbl %>% 
@@ -227,14 +227,18 @@ get_user_product_recommendations(
 
 
 
+# ******************************************************************************
+# ITEM TO ITEM SIMILARITY ANALYSIS / RECOMMENDATIONS ----
+# ******************************************************************************
 
-
-
-
-
-
-
-
+# item_to_item_matrix <- cosine(
+#     as.matrix(
+#         user_item_matrix[, 2:dim(user_item_matrix)[2]]
+#     )
+# ) %>% 
+#     as_tibble() %>% 
+#     mutate(stock_code = colnames(user_item_matrix)[-1]) %>% 
+#     select(stock_code, everything())
 
 
 
