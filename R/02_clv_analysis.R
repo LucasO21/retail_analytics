@@ -54,8 +54,6 @@ retail_data_clean_tbl <- tbl(con, "retail_data_clean_tbl") %>%
     mutate(invoice_date = lubridate::date(invoice_date)) %>% 
     filter(invoice_date <= as.Date("2011-11-30"))
 
-retail_data_clean_tbl %>% pull(invoice_date) %>% range()
-
 
 # ******************************************************************************
 # DATA PREP ----
@@ -239,6 +237,18 @@ predictions_test_tbl %>%
 vip(wflw_spend_prob_xgb$fit$fit)
 
 vip(wflw_spend_total_xgb$fit$fit)
+
+
+# ******************************************************************************
+# FORMAT PREDICTIONS TABLE ----
+# ******************************************************************************
+quantile_tbl <- quantile(predictions_test_tbl$spend_actual_vs_pred)
+
+predictions_test_tbl %>% 
+    mutate(residual_quantile = case_when(
+        spend_actual_vs_pred <= quantile_tbl[[1]] ~ ""
+    ))
+    
 
 # ******************************************************************************
 # SAVE ARTIFACTS ----
