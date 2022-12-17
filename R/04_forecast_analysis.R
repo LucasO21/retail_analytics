@@ -63,6 +63,15 @@ daily_quantity_tbl <- retail_data_clean_tbl %>%
     summarize_by_time(invoice_date, "day", total_quantity = sum(quantity)) %>% 
     ungroup()
 
+# * Checking Quantity Sold by Weekday ----
+daily_quantity_tbl %>% 
+    mutate(wday = lubridate::wday(invoice_date, label = TRUE)) %>% 
+    group_by(country, wday) %>% 
+    summarise(total_quantity = sum(total_quantity)) %>% 
+    arrange(desc(total_quantity), .by_group = TRUE) %>% 
+    ungroup()
+
+
 # * Sales Trend ----
 daily_quantity_tbl %>% 
     group_by(country) %>% 
@@ -86,6 +95,7 @@ full_data_tbl <- daily_quantity_tbl %>%
     
     # Apply Time Series Engineering
     group_by(country) %>% 
+    arrange(invoice_date) %>% 
     pad_by_time(invoice_date, .by = FORECAST_TIMEFRAME, .pad_value = 0) %>% 
     
     # Extend Into Future
@@ -131,7 +141,7 @@ recipe_spec <- recipe(total_quantity ~., data = train_tbl) %>%
     step_timeseries_signature(invoice_date) %>% 
     step_rm(matches("(.iso)|(.xts)|(hour)|(minute)(second)(am.pm)")) %>% 
     step_dummy(all_nominal(), one_hot = TRUE) %>% 
-    step_normalize(date_index.num, date_year)
+    step_normalize(invoice_date_index.num, invoice_date_year)
 
 recipe_spec %>% prep() %>% juice() %>% glimpse()
 
@@ -174,7 +184,7 @@ wflw_fit_ranger <- workflow() %>%
     add_recipe(recipe_spec %>% step_rm(invoice_date)) %>% 
     fit(train_tbl)
 
-# Cubist ----
+# * Cubist ----
 wflw_fit_cubist <- workflow() %>% 
     add_model(
         spec = cubist_rules() %>% set_engine("Cubist")
@@ -202,17 +212,83 @@ fit_models_tbl <- modeltime_table(
 
 fit_models_accuracy_tbl <- fit_models_tbl %>% 
     modeltime_accuracy(test_tbl) %>% 
-    arrange(rmse)
+    arrange(rmse) %>% 
+    select(-mape, -smape)
 
 
+# ******************************************************************************
+# VISUALIZING FORECASTS ----
+# ******************************************************************************
+
+# * Get Test Forecast Data ----
+fit_models_calibrate_tbl <- fit_models_tbl %>% 
+    modeltime_calibrate(new_data = test_tbl)
+
+test_forecast_tbl <- fit_models_calibrate_tbl %>% 
+    modeltime_forecast(
+        new_data     = test_tbl,
+        actual_data  = data_prepared_tbl,
+        keep_data    = TRUE
+    )
+
+# * Visualizing Forecasts ----
+test_forecast_tbl %>% 
+    filter(invoice_date >= as.Date("2011-01-01")) %>% 
+    group_by(country) %>% 
+    plot_modeltime_forecast(.conf_interval_show = FALSE)
 
 
+# ******************************************************************************
+# FUTURE FORECASTS ----
+# ******************************************************************************
+
+# * Future Forecast Data ----
+future_forecast_tbl <- fit_models_calibrate_tbl %>% 
+    modeltime_forecast(
+        new_data    = future_data_tbl,
+        actual_data = data_prepared_tbl, 
+        keep_data   = TRUE
+    ) %>% 
+    mutate(
+        .value         = expm1(.value), 
+        total_quantity = expm1(total_quantity),
+        .conf_lo       = expm1(.conf_lo),
+        .conf_hi       = expm1(.conf_hi)
+    )
 
 
+# * Visualize Future Forecast ----
+future_forecast_tbl %>% 
+    filter(invoice_date >= as.Date("2011-05-01")) %>% 
+    group_by(country) %>% 
+    plot_modeltime_forecast(
+        .facet_ncol          = 1
+    )
+
+# ******************************************************************************
+# SAVE FORECAST ARTIFACTS ----
+# ******************************************************************************
+
+forecast_artifacts_list <- list(
+    
+    # models
+    models = list(fit_models_tbl),
+    
+    # data
+    data = list(
+        test_forecast_tbl       = test_forecast_tbl,
+        future_forecast_tbl     = future_forecast_tbl,
+        fit_models_accuracy_tbl = fit_models_accuracy_tbl
+    )
+    
+)
+
+forecast_artifacts_list %>% write_rds("../artifacts/forecast_artifacts_list.rds")
 
 
-
-
+# ******************************************************************************
+# SAVE FORECAST ARTIFACTS ----
+# ******************************************************************************
 
 
 
