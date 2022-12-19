@@ -5,3 +5,5 @@
 /data
 /artifacts
 /archive
+/shiny_app/app_artifacts
+/shiny_app/app_data
