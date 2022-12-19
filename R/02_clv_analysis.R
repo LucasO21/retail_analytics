@@ -155,6 +155,7 @@ train_tbl <- training(splits_2_train) %>%
         spend_90_flag  = 0
     )
     ) %>% 
+    mutate(spend_90_flag = as.factor(spend_90_flag))
     
 
 
@@ -242,13 +243,7 @@ vip(wflw_spend_total_xgb$fit$fit)
 # ******************************************************************************
 # FORMAT PREDICTIONS TABLE ----
 # ******************************************************************************
-quantile_tbl <- quantile(predictions_test_tbl$spend_actual_vs_pred)
 
-predictions_test_tbl %>% 
-    mutate(residual_quantile = case_when(
-        spend_actual_vs_pred <= quantile_tbl[[1]] ~ ""
-    ))
-    
 
 # ******************************************************************************
 # SAVE ARTIFACTS ----
