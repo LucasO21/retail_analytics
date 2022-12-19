@@ -116,7 +116,7 @@ ui <- tagList(
                                 width = 6,
                                 tags$fieldset(
                                     tags$legend(
-                                        "Spend Probability", 
+                                        "CLV Spend Probability", 
                                         tags$span(id = "info1", icon("info-circle"))
                                     ),
                                     plotlyOutput("spend_prob_p", height = "400px")
@@ -128,7 +128,7 @@ ui <- tagList(
                                 width = 6,
                                 tags$fieldset(
                                     tags$legend(
-                                        "Features Plot", 
+                                        "CLV Features", 
                                         tags$span(id = "info2", icon("info-circle"))
                                     ),
                                     plotlyOutput("features_p", height = "400px")
@@ -136,14 +136,22 @@ ui <- tagList(
                             ) # End Column
                         ),
                         
+                        br(), br(), 
+                        
                         
                         # ** Fluid Row 2 ----
                         fluidRow(
-                            # get_plot_box(
-                            #     .col_width = 12, 
-                            #     .title     = "Spend Probability Data", 
-                            #     .id        = "spend_prob_data"
-                            # )
+                            
+                            column(
+                                width = 12,
+                                tags$fieldset(
+                                    tags$legend(
+                                        "CLV Features Data", 
+                                        tags$span(id = "info3", icon("info-circle"))
+                                    ),
+                                    dataTableOutput("clv_data", height = "400px")
+                                )
+                            ) # End Column
                         )
                         
                     ) # End Main Panel
@@ -190,8 +198,11 @@ server <- function(input, output) {
     })
     
     # * CLV Spend/Features Data ----
-    output$clv_data <- renderDataTable({
-        
+    output$clv_data <- DT::renderDataTable({
+        clv_filtered_tbl() %>% 
+            select(-text) %>% 
+            get_clv_dt() 
+
     })
     
  
