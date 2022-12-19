@@ -27,7 +27,7 @@ library(DT)
 library(xgboost)
 
 # * Source ----
-source("app_functions/ui_server_functions.R")
+# source("app_functions/ui_server_functions.R")
 source("app_functions/clv_functions.R")
 
 
@@ -50,19 +50,26 @@ fp_tbl <- read_rds("../shiny_app/app_data/first_purchase_data.rds")
 rdc_tbl <- read_rds("../shiny_app/app_data/retail_clean_data.rds")
 
 # * CLV Data ----
-clv_pred_tbl <- read_rds("../shiny_app/app_artifacts/clv_artifacts_list.rds")[[2]][[3]]
+clv_pred_tbl <- read_rds("../shiny_app/app_artifacts/clv_artifacts_list.rds")[[2]][[3]] %>% 
+    left_join(fp_tbl %>% select(customer_id, country))
+
+# clv_pred_tbl <- clv_list[[2]][[3]] %>% 
+#     left_join(fp_tbl %>% select(customer_id, country))
 
 
 # ******************************************************************************
 # SERVIER ----
 # ******************************************************************************
 ui <- tagList(
+    # useShinyjs(), 
+    
     navbarPage(
         
         title = "Retail Analytics App",
         
         # Home Panel
         tabPanel(
+            
             title = "CLV Analysis",
             
             fluidPage(
@@ -90,33 +97,55 @@ ui <- tagList(
                         sliderInput(
                             inputId = "sample_prop",
                             label   = h4("Proportion of Data Shown"),
-                            min     = 0,
+                            min     = 0.1,
                             max     = 1,
                             value   = 1,
                             step    = 0.05 
-                        )
+                        ),
+                        
+                        actionButton("apply", label = "apply"),
+                        
+    
                     ),
                     mainPanel(
                         width = 10,
                         
                         fluidRow(
-                            get_plot_box(
-                                .title     = "Spend Probablity", 
-                                .id        = "spend_prob_plot_info",
-                                .output    = "plot"
-                            ),
+                      
+                            # Column 1 -----------------------------------------
+                            column(
+                                width = 6,
+                                tags$fieldset(
+                                    tags$legend(
+                                        "Spend Probability", 
+                                        tags$span(id = "info1", icon("info-circle"))
+                                    ),
+                                    plotlyOutput("spend_prob_p", height = "400px")
+                                )
+                            ), # End column 
                             
-                            get_plot_box(.title = "Key Features", .id = "key_features")
+                            column(
+                                width = 6,
+                                tags$fieldset(
+                                    tags$legend(
+                                        "Spend Probability", 
+                                        tags$span(id = "info1", icon("info-circle"))
+                                    ),
+                                    plotlyOutput("spend_prob_p", height = "400px")
+                                )
+                            )
+
+                            
                         
                                
                             ),
                         
                         fluidRow(
-                            get_plot_box(
-                                .col_width = 12, 
-                                .title     = "Spend Probability Data", 
-                                .id        = "spend_prob_data"
-                            )
+                            # get_plot_box(
+                            #     .col_width = 12, 
+                            #     .title     = "Spend Probability Data", 
+                            #     .id        = "spend_prob_data"
+                            # )
                         )
                         
                     )
@@ -139,21 +168,42 @@ server <- function(input, output) {
     clv_filtered_tbl <- reactive({
 
         clv_pred_tbl %>%
-            filter(country %in% input$country_picker) %>%
+            get_scatter_plot_data() %>% 
+            filter(country %in% input$country_picker) %>% 
             sample_frac(size = input$sample_prop)
 
     })
-
-
+    
+    
     # * Spend Prob Scatterplot ----
-    output$spend_prob_plot <- renderPlotly({
-        
-        clv_pred_tbl %>% 
-            get_scatter_plot_data()
+    output$spend_prob_p <- renderPlotly({
+
+        clv_filtered_tbl() %>% 
+            get_scatter_plot_data() %>% 
             get_scatter_plot()
-        
+
     })
     
+    # output$plot1 <- renderPlot({
+    #     
+    #     plot(
+    #     
+    #         clv_filtered_tbl()$.pred_prob, clv_filtered_tbl()$frequency
+    #     )
+    #     
+    # })
+    
+    # output$plot1 <- renderDataTable({
+    # 
+    #     clv_filtered_tbl()
+    # 
+    # })
+    
+ 
+    
+    
+    
+
 }
 
 shinyApp(ui, server)
