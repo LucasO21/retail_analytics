@@ -58,7 +58,7 @@ clv_pred_tbl <- read_rds("../shiny_app/app_artifacts/clv_artifacts_list.rds")[[2
 
 
 # ******************************************************************************
-# SERVIER ----
+# UI ----
 # ******************************************************************************
 ui <- tagList(
     # useShinyjs(), 
@@ -67,17 +67,17 @@ ui <- tagList(
         
         title = "Retail Analytics App",
         
-        # Home Panel
+        # * CLV Page ----
         tabPanel(
-            
             title = "CLV Analysis",
-            
             fluidPage(
                 sidebarLayout(
+                    
+                    # * Side Bar Panel ----
                     sidebarPanel(
                         width = 2,
                         
-                        # Country Picker Input
+                        # ** Country Picker Input ----
                         pickerInput(
                             inputId  = "country_picker",
                             label    = h4("Select Country"),
@@ -93,7 +93,7 @@ ui <- tagList(
                         
                         br(),
                         
-                        # Percent of Data Input
+                        # ** Percent of Data Input ----
                         sliderInput(
                             inputId = "sample_prop",
                             label   = h4("Proportion of Data Shown"),
@@ -101,18 +101,17 @@ ui <- tagList(
                             max     = 1,
                             value   = 1,
                             step    = 0.05 
-                        ),
-                        
-                        actionButton("apply", label = "apply"),
-                        
-    
+                        )
                     ),
+                    
+                    # * Main Panel ----
                     mainPanel(
                         width = 10,
                         
+                        # ** Fluid Row 1 ----
                         fluidRow(
                       
-                            # Column 1 -----------------------------------------
+                            # *** Column 1 ----
                             column(
                                 width = 6,
                                 tags$fieldset(
@@ -122,24 +121,23 @@ ui <- tagList(
                                     ),
                                     plotlyOutput("spend_prob_p", height = "400px")
                                 )
-                            ), # End column 
+                            ), # End Column 1
                             
+                            # *** Column 2 ----
                             column(
                                 width = 6,
                                 tags$fieldset(
                                     tags$legend(
-                                        "Spend Probability", 
-                                        tags$span(id = "info1", icon("info-circle"))
+                                        "Features Plot", 
+                                        tags$span(id = "info2", icon("info-circle"))
                                     ),
-                                    plotlyOutput("spend_prob_p", height = "400px")
+                                    plotlyOutput("features_p", height = "400px")
                                 )
-                            )
-
-                            
+                            ) # End Column
+                        ),
                         
-                               
-                            ),
                         
+                        # ** Fluid Row 2 ----
                         fluidRow(
                             # get_plot_box(
                             #     .col_width = 12, 
@@ -148,7 +146,7 @@ ui <- tagList(
                             # )
                         )
                         
-                    )
+                    ) # End Main Panel
                       
                 )
             )
@@ -164,7 +162,7 @@ ui <- tagList(
 # ******************************************************************************
 server <- function(input, output) {
     
-    # * Data Filtered ----
+    # * CLV Data Filtered ----
     clv_filtered_tbl <- reactive({
 
         clv_pred_tbl %>%
@@ -174,8 +172,7 @@ server <- function(input, output) {
 
     })
     
-    
-    # * Spend Prob Scatterplot ----
+    # * CLV Spend Prob Scatterplot ----
     output$spend_prob_p <- renderPlotly({
 
         clv_filtered_tbl() %>% 
@@ -184,20 +181,20 @@ server <- function(input, output) {
 
     })
     
-    # output$plot1 <- renderPlot({
-    #     
-    #     plot(
-    #     
-    #         clv_filtered_tbl()$.pred_prob, clv_filtered_tbl()$frequency
-    #     )
-    #     
-    # })
+    # * CLV Features Plot ----
+    output$features_p <- renderPlotly({
+        
+        clv_filtered_tbl() %>% 
+            get_features_plot_data() %>% 
+            get_features_plot()
+    })
     
-    # output$plot1 <- renderDataTable({
-    # 
-    #     clv_filtered_tbl()
-    # 
-    # })
+    # * CLV Spend/Features Data ----
+    output$clv_data <- renderDataTable({
+        
+    })
+    
+ 
     
  
     
