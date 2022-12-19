@@ -7,6 +7,7 @@ setwd(here::here("functions"))
 # * Libraries
 library(tidyverse)
 library(plotly)
+library(DT)
 
 # ******************************************************************************
 # LOAD DATA ----
@@ -50,11 +51,10 @@ get_tooltip_text <- function(data){
 # ******************************************************************************
 # DATA PREP FOR SCATTER PLOT ----
 # ******************************************************************************
-get_scatter_plot_data <- function(data, sample_prop = 1){
+get_scatter_plot_data <- function(data){
     
     data_prep <- data %>% 
-        sample_frac(size = sample_prop) %>% 
-        left_join(get_tooltip_text(data = data))
+        left_join(get_tooltip_text(data))
     
     return(data_prep)
 }
@@ -74,9 +74,11 @@ get_scatter_plot <- function(data){
         scale_colour_gradientn(colours = c("#cc4125", "#ea9999", "#ffd966", "#6aa84f", "#274e13"))+
         labs(x = "Purchase Frequency", y = "Probability of Future 90-Day Purchase")+
         theme_minimal()+
-        custom_axis_theme()
+        custom_axis_theme()+
+        theme(legend.key.size = unit(0.5, "cm"))+
+        theme(legend.title = element_text(size = 9))
     
-    p <- ggplotly(p, tooltip = "text")
+    p <- ggplotly(p, tooltip = "text") 
     
     return(p)
     
@@ -84,43 +86,73 @@ get_scatter_plot <- function(data){
 
 # data %>% get_scatter_plot_data() %>% get_scatter_plot()
 
-# 
-# # * Features Plot Data ----
-# get_features_plot_data <- function(data){
-#     
-#     data_prep <- data %>% 
-#         pivot_longer(
-#             cols = c(recency, frequency, sales_sum),
-#             names_to = "feature", values_to = "value"
-#         ) %>% 
-#         group_by(feature) %>% 
-#         mutate(value_scaled = scale(value) %>% as.numeric()) %>% 
-#         ungroup() %>% 
-#         left_join(get_tooltip_text(data = data))
-#     
-#     return(data_prep)
-#     
-# }
-# 
-# # * Features Plot ----
-# get_features_plot <- function(data){
-#     
-#     p <- data %>% 
-#         ggplot(aes(feature, value_scaled))+
-#         geom_violin(col = "grey")+
-#         geom_jitter(aes(text = text, color = spend_actual_vs_pred), size = 2, alpha = 0.8)+
-#         coord_flip()+
-#         theme_minimal()+
-#         custom_axis_theme()+
-#         scale_colour_gradientn(colours = c("#cc4125", "#ea9999", "#ffd966", "#6aa84f", "#274e13"))+
-#         labs(x = "", y = "Probability of Future 90-Day Purchase")
-#     
-#     p <- ggplotly(p, tooltip = "text")
-#     
-#     return(p)
-#     
-# }
-# 
-# # predictions_test_tbl %>% get_features_plot_data() %>% get_features_plot()
-# 
-#     
+
+# ******************************************************************************
+# FEATURES PLOT DATA ----
+# ******************************************************************************
+get_features_plot_data <- function(data){
+    
+    tooltip_data <- data %>% 
+        get_tooltip_text()
+
+    data_prep <- data %>%
+        pivot_longer(
+            cols = c(recency, frequency, sales_sum),
+            names_to = "feature", values_to = "value"
+        ) %>%
+        group_by(feature) %>%
+        mutate(value_scaled = scale(value) %>% as.numeric()) %>%
+        ungroup() %>%
+        left_join(tooltip_data)
+
+    return(data_prep)
+
+}
+
+# data %>% get_features_plot_data()
+
+# ******************************************************************************
+# FEATURES PLOT ----
+# ******************************************************************************
+get_features_plot <- function(data){
+
+    p <- data %>%
+        ggplot(aes(feature, value_scaled))+
+        geom_violin(col = "grey")+
+        geom_jitter(aes(text = text, color = spend_actual_vs_pred), size = 2, alpha = 0.9)+
+        coord_flip()+
+        theme_minimal()+
+        custom_axis_theme()+
+        theme(legend.key.size = unit(0.5, "cm"))+
+        theme(legend.title = element_text(size = 9))+
+        scale_colour_gradientn(colours = c("#cc4125", "#ea9999", "#ffd966", "#6aa84f", "#274e13"))+
+        labs(x = "", y = "Probability of Future 90-Day Purchase")
+
+    p <- ggplotly(p, tooltip = "text")
+
+    return(p)
+
+}
+
+# data %>% get_features_plot_data() %>% get_features_plot()
+
+
+# ******************************************************************************
+# DATA TABLE ----
+# ******************************************************************************
+get_clv_dt <- function(data){
+    
+    data %>% 
+        select(customer_id, everything()) %>% 
+        mutate(.pred_prob = .pred_prob %>% scales::percent(accuracy = 0.1)) %>% 
+        mutate(across(
+            .cols = c(.pred_total, spend_90_total, sales_sum, sales_mean, spend_actual_vs_pred),
+            .fns = scales::dollar_format(accuracy = 0.1)
+        )) %>% 
+        setNames(names(.) %>% str_replace_all("_", " ")) %>% 
+        setNames(names(.) %>% str_to_title())
+    
+}
+
+
+
