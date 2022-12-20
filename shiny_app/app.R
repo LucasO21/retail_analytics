@@ -27,20 +27,20 @@ library(xgboost)
 library(coop)
 
 # * Source ----
-source("../shiny_app/app_functions/clv_functions.R")
-source("../shiny_app/app_functions/pr_functions.R")
+source("app_functions/clv_functions.R")
+source("app_functions/pr_functions.R")
 
 
 # Data Import ----
 
 # * First Purchase Data ----
-fp_tbl <- read_rds("../shiny_app/app_data/first_purchase_data.rds")
+fp_tbl <- read_rds("app_data/first_purchase_data.rds")
 
 # * Load Sales Data ----
-rdc_tbl <- read_rds("../shiny_app/app_data/retail_clean_data.rds")
+rdc_tbl <- read_rds("app_data/retail_clean_data.rds")
 
 # * CLV Data ----
-clv_pred_tbl <- read_rds("../shiny_app/app_artifacts/clv_artifacts_list.rds")[[2]][[3]] %>% 
+clv_pred_tbl <- read_rds("app_artifacts/clv_artifacts_list.rds")[[2]][[3]] %>% 
     left_join(fp_tbl %>% select(customer_id, country))
 
 customer_country_tbl <- clv_pred_tbl %>% 
@@ -54,7 +54,7 @@ customer_country_tbl <- clv_pred_tbl %>%
 # UI ----
 # ******************************************************************************
 ui <- tagList(
-    # useShinyjs(), 
+    useShinyjs(), 
     useShinydashboard(),
     
     navbarPage(
@@ -123,7 +123,8 @@ ui <- tagList(
                                             "Future Forecast", 
                                             tags$span(id = "ff_plot_info", icon("info-circle"))
                                         ),
-                                        plotlyOutput("spend_prob_p", height = "400px")
+                                        # plotlyOutput("spend_prob_p", height = "400px")
+                                        plotOutput("plot1")
                                     )
                                 )
                             ),
@@ -136,7 +137,7 @@ ui <- tagList(
                                     tags$fieldset(
                                         tags$legend(
                                             "CLV Features Plot", 
-                                            tags$span(id = "info2", icon("info-circle")),
+                                            tags$span(id = "info2", icon("info-circle"))
                                     ),
                                     plotlyOutput("features_p", height = "400px")
                                 )
@@ -246,7 +247,7 @@ ui <- tagList(
                                 box(
                                     width = 24,
                                     tags$h3("Product Recommendations"),
-                                    textOutput("test")
+                                    textOutput("product_recommendations")
                                 )
                             )
                         ),
@@ -290,6 +291,10 @@ server <- function(input, output) {
             filter(country %in% input$country_picker) %>% 
             sample_frac(size = input$sample_prop)
 
+    })
+    
+    output$plot1 <- renderPlot({
+        plot(rnorm(10), rnorm(10))
     })
     
     # ** CLV Spend Prob Scatterplot ----
@@ -369,7 +374,7 @@ server <- function(input, output) {
     })
     
     # ** Recommended Products List ----
-    output$test <- renderText({
+    output$product_recommendations <- renderText({
         
         l <- pr_recommender_filtered_tbl() %>% 
             get_user_item_matrix() %>% 
