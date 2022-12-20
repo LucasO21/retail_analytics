@@ -147,12 +147,28 @@ ui <- tagList(
                                 )
                             )
                             
+                        ),
+                        
+                        # ** Fluid Row 2 ----
+                        fluidRow(
+                            
+                            # *** Column 1 ----
+                            column(
+                                width = 12,
+                                box(
+                                    width = 24,
+                                    tags$fieldset(
+                                        tags$legend(
+                                            "CLV Features Data", 
+                                            tags$span(id = "info3", icon("info-circle"))
+                                        ),
+                                        dataTableOutput("clv_data", height = "400px")
+                                    )
+                                )
+                            ) 
                         )
                         
-                        
-                        
-                        
-                    )
+                    ) # end clv analysis mainPanel
                 )
             )
         ), # end clv analysis tabPanel
@@ -208,6 +224,16 @@ server <- function(input, output) {
         clv_filtered_tbl() %>% 
             get_features_plot_data() %>% 
             get_features_plot()
+    })
+    
+    # ** CLV Spend/Features Data ----
+    output$clv_data <- DT::renderDataTable({
+        clv_filtered_tbl() %>% 
+            select(-text) %>% 
+            get_clv_dt() %>% 
+            mutate_if(is.numeric, as.character) %>% 
+            mutate_if(is.factor, as.character)
+        
     })
     
     # output$test <- renderDataTable({
