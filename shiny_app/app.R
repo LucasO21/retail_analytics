@@ -236,6 +236,23 @@ server <- function(input, output) {
         
     })
     
+    # ** CLV Data Download ----
+    output$download_clv_data <- downloadHandler(
+        
+        filename = function(){
+            paste("clv_data", "csv", sep = ".")
+        },
+        
+        content = function(file){
+            write.csv(
+                clv_filtered_tbl() %>% 
+                    select(-text) %>% 
+                    get_clv_dt(),
+                file
+            )
+        }
+    )
+    
     # output$test <- renderDataTable({
     #     clv_filtered_tbl()
     # })
