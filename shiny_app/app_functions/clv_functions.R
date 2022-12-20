@@ -2,12 +2,12 @@
 # *** ---
 
 # * Working Dir ----
-setwd(here::here("functions"))
-
-# * Libraries
-library(tidyverse)
-library(plotly)
-library(DT)
+# setwd(here::here("functions"))
+# 
+# # * Libraries
+# library(tidyverse)
+# library(plotly)
+# library(DT)
 
 # ******************************************************************************
 # LOAD DATA ----
