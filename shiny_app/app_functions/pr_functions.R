@@ -2,10 +2,8 @@
 # **** ----
 
 # Libraries ----
-library(tidyverse)
-library(coop)
-
-# retail_data_clean_tbl
+# library(tidyverse)
+# library(coop)
 
 # ******************************************************************************
 # GET ANALYSIS COHORT ----
