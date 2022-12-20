@@ -220,7 +220,30 @@ ui <- tagList(
                     ),
 
                     # * Main Panel ----
-                    mainPanel()
+                    mainPanel(
+                      width = 10,
+                      
+                      # ** Fluid Row 1 ----
+                      fluidRow(
+                        
+                        # *** Column 1 ----
+                        column(
+                          width = 12,
+                          box(
+                            width = 24,
+                            tags$h3("Product Recommender"),
+                            HTML(
+                              "
+                              <p>This tab contains info on personalized product recommendations for each customer. The product
+                              recommendations are based on similarities among customers, meaning product recommendations for a
+                              particular customer are based on what other similar customers have purchased in the past.
+                              To learn more on user-based collaborative filtering, visit
+                              <a href='https://en.wikipedia.org/wiki/Collaborative_filtering'>this link.</a></p>
+                              ")
+                          )               
+                        )
+                      )
+                    )
                 )
             )
         ) # end product recommender tabPanel
@@ -312,6 +335,34 @@ server <- function(input, output) {
         selected = unique(x$customer_id)[1]
       )
       
+    })
+    
+    # ** Product Recommender Data Filtered ----
+    start_date              <- max(rdc_tbl$invoice_date) - 90
+    end_date                <- max(rdc_tbl$invoice_date)
+    
+    pr_recommender_filtered_tbl <- reactive({
+      
+      rdc_tbl %>% 
+        filter(customer_id %in% clv_pred_tbl$customer_id) %>% 
+        filter(between(invoice_date, start_date, end_date))
+      
+    })
+    
+    # ** Recommended Products List ----
+    output$product_recommendations <- renderText({
+      
+      l <- pr_recommender_filtered_tbl() %>% 
+        get_user_item_matrix() %>% 
+        get_user_to_user_cosine_matrix() %>%
+        get_user_product_recommendations(
+          .sales_data  = pr_recommender_filtered_tbl(),
+          .customer_id = input$customer_id,
+          .n_closest   = 3
+        ) %>% 
+        pull(Description)
+      
+      paste(toString(l))
     })
     
     
