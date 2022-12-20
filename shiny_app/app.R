@@ -256,6 +256,20 @@ ui <- tagList(
                             textOutput("product_recommendations")
                           )
                         )
+                      ),
+                      
+                      # ** Fluid Row 3 ----
+                      fluidRow(
+                        
+                        # *** Column 1 ----
+                        column(
+                          width = 12,
+                          box(
+                            width = 24,
+                            tags$h3("Average Amount Spent by Customer on Recommended Products"),
+                            dataTableOutput("opportunity")
+                          )
+                        )
                       )
                     )
                 )
@@ -378,6 +392,20 @@ server <- function(input, output) {
       
       paste(toString(l))
     })
+    
+    # ** Opportunity DT Table ----
+    output$opportunity <- renderDataTable({
+      
+      pr_recommender_filtered_tbl() %>% 
+        get_user_item_matrix() %>% 
+        get_user_to_user_cosine_matrix() %>%
+        get_user_product_recommendations(
+          .sales_data  = pr_recommender_filtered_tbl(),
+          .customer_id = input$customer_id,
+          .n_closest   = 3
+        )
+    })
+    
     
     
     
