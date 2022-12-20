@@ -69,7 +69,7 @@ get_scatter_plot <- function(data){
     
     p <- data %>% 
         ggplot(aes(frequency, .pred_prob, color = spend_actual_vs_pred))+
-        geom_point(aes(text = text), size = 3)+
+        geom_point(aes(text = text), size = 2)+
         geom_smooth(se = FALSE, color = "black", method = "gam")+
         scale_colour_gradientn(colours = c("#cc4125", "#ea9999", "#ffd966", "#6aa84f", "#274e13"))+
         labs(x = "Purchase Frequency", y = "Probability of Future 90-Day Purchase")+
@@ -123,8 +123,9 @@ get_features_plot <- function(data){
         coord_flip()+
         theme_minimal()+
         custom_axis_theme()+
-        theme(legend.key.size = unit(0.5, "cm"))+
-        theme(legend.title = element_text(size = 9))+
+        # theme(legend.key.size = unit(0.5, "cm"))+
+        # theme(legend.title = element_text(size = 9))+
+        theme(legend.position = "none")+
         scale_colour_gradientn(colours = c("#cc4125", "#ea9999", "#ffd966", "#6aa84f", "#274e13"))+
         labs(x = "", y = "Probability of Future 90-Day Purchase")
 
@@ -134,7 +135,7 @@ get_features_plot <- function(data){
 
 }
 
-# data %>% get_features_plot_data() %>% get_features_plot()
+# predictions_tbl %>% get_features_plot_data() %>% get_features_plot()
 
 
 # ******************************************************************************
