@@ -8,6 +8,7 @@
 # ******************************************************************************
 # GET ANALYSIS COHORT ----
 # ******************************************************************************
+# retail_data_clean_tbl   <- rdc_tbl
 # start_date              <- max(retail_data_clean_tbl$invoice_date) - 90
 # end_date                <- max(retail_data_clean_tbl$invoice_date)
 # 
@@ -117,7 +118,7 @@ get_user_product_recommendations <- function(data, .sales_data,
         as_tibble() %>%
         rename(stock_code = value) %>%
         left_join(
-            analysis_cohort_tbl %>%
+            .sales_data %>%
                 select(stock_code, description) %>%
                 distinct()
         )
@@ -148,18 +149,3 @@ get_user_product_recommendations <- function(data, .sales_data,
     return(opportunity_tbl)
 
 }
-
-# t <- analysis_cohort_tbl %>%
-#     get_user_item_matrix() %>%
-#     get_user_to_user_cosine_matrix() %>%
-#     get_user_product_recommendations(
-#         .customer_id = "12380",
-#         .n_closest   = 3,
-#         .sales_data = analysis_cohort_tbl
-#     )
-# 
-# l <- t %>% 
-#     select(Description) %>% 
-#     pull()
-# 
-# toString(l)
