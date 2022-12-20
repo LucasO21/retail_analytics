@@ -102,7 +102,7 @@ ui <- tagList(
                         # *** Download Button Input ----
                         downloadButton(
                             outputId = "download_clv_data",
-                            label    = "Download CLV Data"
+                            label    = "Download Data"
                         )
                         
                         
@@ -178,7 +178,48 @@ ui <- tagList(
             title = "Product Recommender",
             fluidPage(
                 sidebarLayout(
-                    sidebarPanel(),
+                    
+                    # ** Sidebar Panel ----
+                    sidebarPanel(
+                        width = 2,
+                        
+                        # *** Country Picker Input ----
+                        pickerInput(
+                            inputId  = "country_picker_2",
+                            label    = h4("Select Country"),
+                            choices  = sort(unique(customer_country_tbl$country)),
+                            selected = sort(unique(customer_country_tbl$country)),
+                            multiple = TRUE,
+                            options  = list(
+                                `actions-box`          = TRUE,
+                                size                   = 10,
+                                `selected-text-format` = "count > 3"
+                            )
+                        ),
+                        
+                        br(),
+                        
+                        # *** Customer ID Input ----
+                        selectizeInput(
+                            inputId  = "customer_id",
+                            label    = h4("Select Customer ID"),
+                            choices  = NULL,
+                            selected = NULL,
+                            multiple = FALSE
+                        ),
+                        
+                        br(),
+                        hr(),
+                        br(),
+                        
+                        # *** Download Product Recommender Data ----
+                        downloadButton(
+                            outputId = "download_clv_data",
+                            label    = "Download Data"
+                        )
+                    ),
+                    
+                    # * Main Panel ----
                     mainPanel()
                 )
             )
@@ -253,9 +294,9 @@ server <- function(input, output) {
         }
     )
     
-    # output$test <- renderDataTable({
-    #     clv_filtered_tbl()
-    # })
+    # **************************************************************************
+    
+    # * Product Recommender Server Functions ----
     
     
     
