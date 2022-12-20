@@ -43,10 +43,10 @@ rdc_tbl <- read_rds("app_data/retail_clean_data.rds")
 clv_pred_tbl <- read_rds("app_artifacts/clv_artifacts_list.rds")[[2]][[3]] %>% 
     left_join(fp_tbl %>% select(customer_id, country))
 
-customer_country_tbl <- clv_pred_tbl %>% 
-    select(customer_id, country) %>% 
-    distinct() %>% 
-    arrange(country) %>% 
+customer_country_tbl <- clv_pred_tbl %>%
+    select(customer_id, country) %>%
+    distinct() %>%
+    arrange(country) %>%
     mutate(customer_id = as.character(customer_id))
 
 
@@ -174,15 +174,15 @@ ui <- tagList(
         ), # end clv analysis tabPanel
         
         # * Product Recommender ----
-        tabPanel(
-            title = "Product Recommender",
-            fluidPage(
+         tabPanel(
+             title = "Product Recommender",
+             fluidPage(
                 sidebarLayout(
-                    
+
                     # ** Sidebar Panel ----
                     sidebarPanel(
                         width = 2,
-                        
+
                         # *** Country Picker Input ----
                         pickerInput(
                             inputId  = "country_picker_2",
@@ -196,9 +196,9 @@ ui <- tagList(
                                 `selected-text-format` = "count > 3"
                             )
                         ),
-                        
+
                         br(),
-                        
+
                         # *** Customer ID Input ----
                         selectizeInput(
                             inputId  = "customer_id",
@@ -207,18 +207,18 @@ ui <- tagList(
                             selected = NULL,
                             multiple = FALSE
                         ),
-                        
+
                         br(),
                         hr(),
                         br(),
-                        
+
                         # *** Download Product Recommender Data ----
                         downloadButton(
-                            outputId = "download_clv_data",
+                            outputId = "download_pr_data",
                             label    = "Download Data"
                         )
                     ),
-                    
+
                     # * Main Panel ----
                     mainPanel()
                 )
@@ -297,6 +297,22 @@ server <- function(input, output) {
     # **************************************************************************
     
     # * Product Recommender Server Functions ----
+    
+    # ** Update Filtering Logic ----
+    observe({
+      
+      x <- customer_country_tbl %>% 
+        filter(country %in% input$country_picker_2) %>% 
+        select(customer_id)
+      
+      updateSelectInput(
+        session  = getDefaultReactiveDomain(),
+        inputId  = "customer_id",
+        choices  = unique(x$customer_id),
+        selected = unique(x$customer_id)[1]
+      )
+      
+    })
     
     
     
