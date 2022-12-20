@@ -242,6 +242,20 @@ ui <- tagList(
                               ")
                           )               
                         )
+                      ),
+                      
+                      # ** Fluid Row 2 ----
+                      fluidRow(
+                        
+                        # *** Column 1 ----
+                        column(
+                          width = 12,
+                          box(
+                            width = 24,
+                            tags$h3("Product Recommendations"),
+                            textOutput("product_recommendations")
+                          )
+                        )
                       )
                     )
                 )
