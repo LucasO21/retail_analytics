@@ -49,6 +49,10 @@ customer_country_tbl <- clv_pred_tbl %>%
     arrange(country) %>%
     mutate(customer_id = as.character(customer_id))
 
+ids_for_pr_recommender <- clv_pred_tbl %>% 
+  filter(spend_90_flag == 1) %>% 
+  pull(customer_id)
+
 
 # ******************************************************************************
 # UI ----
@@ -355,6 +359,8 @@ server <- function(input, output) {
       x <- customer_country_tbl %>% 
         filter(country %in% input$country_picker_2) %>% 
         select(customer_id)
+      
+      x <- x %>% filter(customer_id %in% ids_for_pr_recommender)
       
       updateSelectInput(
         session  = getDefaultReactiveDomain(),
