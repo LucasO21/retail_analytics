@@ -83,25 +83,60 @@ ui <- tagList(
         tabPanel(
           title = "Home",
           
-          box(
-            title = h3("CLV Analysis Tab", align = "center"),
-            width = 4,
-            footer = h5("View 90 Day Spend Probability For Customers", align = "center"),
+          fluidRow(
             
-            div(
-              tags$img(id     = "shopping_cart",
-                       src    = "shopping-cart.png", 
-                       style  = "cursor:pointer;",
-                       height = "20%", 
-                       width  = "50%"),
-              style = "text-align: center;"
+            # CLV Tab Box ----
+            box(
+              title = h3("CLV Analysis Tab", align = "center"),
+              width = 4,
+              footer = h5("View 90 Day Spend Probability For Customers", align = "center"),
+              div(
+                tags$img(id     = "customer",
+                         src    = "customer.png",
+                         height = "20%",
+                         width  = "50%"),
+                style = "text-align: center;"
+              )
+
+            ),
+            
+            # ** Product Recommender Tab Box ----
+            box(
+              title = h3("Product Recommender Tab", align = "center"),
+              width = 4,
+              footer = h5("View Product Recommendations For Customers", align = "center"),
+              div(
+                tags$img(id     = "shopping_cart",
+                         src    = "shopping-cart.png",
+                         height = "20%",
+                         width  = "50%"),
+                style = "text-align: center;"
+              )
+              
+            ),
+            
+            box(
+              title = h3("Forecast Tab", align = "center"),
+              width = 4,
+              footer = h5("View 90 Day Forecast by Country", align = "center"),
+              div(
+                tags$img(id     = "business",
+                         src    = "business.png",
+                         height = "20%",
+                         width  = "50%"),
+                style = "text-align: center;"
+              )
+              
             )
             
           )
-          
-          
-          
         ),
+          
+         
+          
+          
+          
+      
         
         # * CLV Analysis Tab ----
         tabPanel(
@@ -444,14 +479,10 @@ ui <- tagList(
 server <- function(input, output) {
   
   # * Home Tab Server Functions ----
-  shinyjs::onclick(
-    "shopping_cart",
-    updateTabsetPanel(
-      session  = getDefaultReactiveDomain(),
-      inputId  = "navbar",
-      selected = "clv_analysis_tab"
-    )
-  )
+  observeEvent(input$link1, { #OBSERVER THAT CHANGES TAB WHEN LINK IS CLICKED
+    updateTabsetPanel(inputId = "tabset", selected = "tab1")
+    updateTabsetPanel(inputId = "tab1_inner", selected = "Summary")
+  })
     
     # * CLV Tab Server Functions ----
     
