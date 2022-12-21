@@ -409,8 +409,6 @@ ui <- tagList(
 
 
 
-
-
 # ******************************************************************************
 # SERVIER ----
 # ******************************************************************************
@@ -464,10 +462,12 @@ server <- function(input, output) {
         
         content = function(file){
             write.csv(
-                clv_filtered_tbl() %>% 
-                    select(-text) %>% 
-                    get_clv_dt(),
-                file
+              clv_filtered_tbl() %>% 
+                select(-text) %>% 
+                get_clv_dt() %>% 
+                mutate_if(is.numeric, as.character) %>% 
+                mutate_if(is.factor, as.character),
+              file
             )
         }
     )
@@ -537,7 +537,7 @@ server <- function(input, output) {
     
     # **************************************************************************
     
-    # Forecast Tab Server Functions ----
+    # * Forecast Tab Server Functions ----
     
     # ** Forecast Data Filtered ----
     future_forecast_data_filtered <- reactive({future_forecast_data})
