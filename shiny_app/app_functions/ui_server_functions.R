@@ -1,40 +1,58 @@
+# FUNCTIONS FOR APP UI ----
+# **** ----
 
+# Libraries ----
 library(shiny)
 library(plotly)
 library(DT)
 
-get_plot_box <- function(.col_width = 6, .col_title, .col_id, .output = "plot", 
-                         .output_id, .output_height = "400px"){
+# CLV Tab Info Text ----
+get_clv_tab_info_text <- function(){
     
-    # Output Setup
-    # if(.output == "plot"){
-    #     .plot = plotlyOutput(outputId = "spend_prob_p", height = .output_height)
-    # } else if (.output == "data_table"){
-    #     .plot = dataTableOutput(outputId = "spend_prob_p", height = .output_height)
-    # }
+    HTML(
+        "
+        <p>
+       This tab show a scoring of customers future spending. With machine learning, 
+       we can predict the probability and amount the customer will spend within the next 90 days.
+        </p>
+        "
+    )
+}
+
+
+# Product Recommender Tab Info Text ----
+get_product_recommender_tab_info_text <- function(){
     
-    # Column Setup
-    column(
-        width = .col_width,
-        tags$fieldset(
-            tags$legend(.col_title, tags$span(id = .col_id, icon("info-circle"))),
-            plotlyOutput(outputId = "spend_prob_p", height = .output_height)
+    HTML(
+        "
+        <p>
+        This tab contains info on personalized product recommendations for each customer. The product
+        recommendations are based on similarities among customers, meaning product recommendations for a
+        particular customer are based on what other similar customers have purchased in the past.
+        To learn more on user-based collaborative filtering, visit
+        <a href='https://en.wikipedia.org/wiki/Collaborative_filtering'>this link.</a>
+        </p>
+        "
         )
-    )
+}
+
+# Forecast Tab Info Text ----
+get_forecast_tab_info_text <- function(){
+    
+    HTML(
+        "
+        <p>This tab contains info 90 day forecast (quantity). Forecast
+        is broken out by United Kingdom and all other countries. On
+        average per day, United Kingdom accounts for 85% of total
+        quantity sold. The top half of the tab helps the user visualize the trailing
+        actual quantity sold (in blue), and the 90 day future forecast (in red).
+        The bottom half of the tab contains the forecast data which can be downloaded
+        to a csv file.
+        </p>
+        "
+        )
+    
     
 }
 
-
-get_info_circle <- function(.id, .title, .content, .placement = "left"){
-    
-    bsPopover(
-        id        = .id,
-        title     = .title,
-        content   = .content,
-        placement = .placement
-    )
-    
-    
-    
-}
 
