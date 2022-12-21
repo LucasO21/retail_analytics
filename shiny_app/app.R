@@ -5,7 +5,7 @@
 # SETUP ----
 # ******************************************************************************
 
-# Set Working Dir ----
+# *Set Working Dir ----
 # setwd(here::here("shiny_app"))
 
 # Libraries ----
@@ -75,7 +75,7 @@ ui <- tagList(
     navbarPage(
         title = "Retail Analytics App",
         
-        # * CLV Analysis ----
+        # * CLV Analysis Tab ----
         tabPanel(
             title = "CLV Analysis",
             fluidPage(
@@ -125,14 +125,14 @@ ui <- tagList(
                         
                     ),
                     
-                    # * CLV Analysis Main Panel ----
+                    # ** Main Panel ----
                     mainPanel(
                         width = 10,
                         
-                        # ** Fluid Row 1 ----
+                        # *** Fluid Row 1 ----
                         fluidRow(
                           
-                          # *** Column 1 ----
+                          # **** Column 1 ----
                           column(
                             width = 12,
                             box(
@@ -143,10 +143,10 @@ ui <- tagList(
                           )
                         ),
                         
-                        # ** Fluid Row 1 ----
+                        # *** Fluid Row 2 ----
                         fluidRow(
                             
-                            # *** Column 1 ----
+                            # **** Column 1 ----
                             column(
                                 width = 6,
                                 box(
@@ -157,12 +157,11 @@ ui <- tagList(
                                             tags$span(id = "info1", icon("info-circle"))
                                         ),
                                         plotlyOutput("spend_prob_p", height = "400px")
-                                        #dataTableOutput("test")
                                     )
                                 )
                             ),
                             
-                            # *** Column 2 ----
+                            # **** Column 2 ----
                             column(
                                 width = 6,
                                 box(
@@ -179,10 +178,10 @@ ui <- tagList(
                             
                         ),
                         
-                        # ** Fluid Row 2 ----
+                        # *** Fluid Row 3 ----
                         fluidRow(
                             
-                            # *** Column 1 ----
+                            # **** Column 1 ----
                             column(
                                 width = 12,
                                 box(
@@ -198,6 +197,7 @@ ui <- tagList(
                             ) 
                         ),
                         
+                        # *** Info Circles ----
                         bsPopover(
                           id        = "info1", 
                           title     = "Probability of Future Spend",
@@ -271,14 +271,14 @@ ui <- tagList(
                         )
                     ),
 
-                    # * Main Panel ----
+                    # ** Main Panel ----
                     mainPanel(
                       width = 10,
                       
-                      # ** Fluid Row 1 ----
+                      # *** Fluid Row 1 ----
                       fluidRow(
                         
-                        # *** Column 1 ----
+                        # **** Column 1 ----
                         column(
                           width = 12,
                           box(
@@ -289,10 +289,10 @@ ui <- tagList(
                         )
                       ),
                       
-                      # ** Fluid Row 2 ----
+                      # *** Fluid Row 2 ----
                       fluidRow(
                         
-                        # *** Column 1 ----
+                        # **** Column 1 ----
                         column(
                           width = 12,
                           box(
@@ -303,10 +303,10 @@ ui <- tagList(
                         )
                       ),
                       
-                      # ** Fluid Row 3 ----
+                      # *** Fluid Row 3 ----
                       fluidRow(
                         
-                        # *** Column 1 ----
+                        # **** Column 1 ----
                         column(
                           width = 12,
                           box(
@@ -316,17 +316,18 @@ ui <- tagList(
                           )
                         )
                       )
-                    )
+                    ) # end product recommender mainPanel
                 )
             )
         ), # end product recommender tabPanel
         
+        # * Forecast Tab ----
         tabPanel(
           title = "Forecast",
           
           fluidPage(
             
-            # *** Fluid Row 1 ----
+            # ** Fluid Row 1 ----
             fluidRow(
               
               # *** Column 1 ----
@@ -340,7 +341,7 @@ ui <- tagList(
               )
             ),
             
-            # ** Fluid Row 1 ----
+            # ** Fluid Row 2 ----
             fluidRow(
               
               # *** Column 1 ----
@@ -353,7 +354,7 @@ ui <- tagList(
                 )
               ),
               
-              # *** Column 12----
+              # *** Column 2 ----
               column(
                 width = 4,
                 box(
@@ -363,7 +364,7 @@ ui <- tagList(
                 )
               ),
               
-              # *** Column 1 ----
+              # *** Column 3 ----
               column(
                 width = 4,
                 box(
@@ -376,10 +377,10 @@ ui <- tagList(
               
             ),
             
-            # ** Fluid Row 2
+            # ** Fluid Row 3 ----
             fluidRow(
               
-              # Column 1 ----
+              # *** Column 1 ----
               column(
                 width = 12,
                 box(
@@ -400,7 +401,7 @@ ui <- tagList(
             )
            
           )
-        )
+        ) # end Forecast tabPanel
     )
 
   
