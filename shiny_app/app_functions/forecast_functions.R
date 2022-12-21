@@ -1,16 +1,20 @@
 # FUNCTIONS FOR FORECASTING ----
 # **** ----
 
-# # Working Dir ----
+# ******************************************************************************
+# SETUP ----
+# ******************************************************************************
+
+# * Working Dir ----
 # setwd(here::here("shiny_app"))
 # 
-# # Libraries ----
+# * Libraries ----
 # library(tidyverse)
 # library(timetk)
 # library(modeltime)
 
 # ******************************************************************************
-# Data Import ----
+# DATA IMPORT ----
 # ******************************************************************************
 # forecast_artifacts_list <- read_rds("app_artifacts/forecast_artifacts_list.rds")
 # 
@@ -23,7 +27,7 @@
 
 
 # ******************************************************************************
-# Data Prep: Summarize By Time ----
+# DATA PREP: SUMMARISE BY TIME ----
 # ******************************************************************************
 # start_date <- as.Date("2011-01-01")
 # data       <- future_forecast_tbl
@@ -58,7 +62,7 @@ get_forecast_data <- function(data,
 
 
 # ******************************************************************************
-# Data Prep: Datatable ----
+# DATA PREP: DATATABLE ----
 # ******************************************************************************
 get_forecast_data_dt <- function(data){
     
