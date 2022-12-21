@@ -1,6 +1,10 @@
 # SHINY APP UI & SERVER SCRIPT ----
 # **** ----
 
+# ******************************************************************************
+# SETUP ----
+# ******************************************************************************
+
 # Set Working Dir ----
 # setwd(here::here("shiny_app"))
 
@@ -27,31 +31,39 @@ library(xgboost)
 library(coop)
 
 # * Source ----
+source("app_functions/ui_server_functions.R")
 source("app_functions/clv_functions.R")
 source("app_functions/pr_functions.R")
+source("app_functions/forecast_functions.R")
 
 
-# Data Import ----
+# ******************************************************************************
+# DATA IMPORT ----
+# ******************************************************************************
 
 # * First Purchase Data ----
-fp_tbl <- read_rds("app_data/first_purchase_data.rds")
+first_purchase_data <- read_rds("app_data/first_purchase_data.rds")
 
 # * Load Sales Data ----
-rdc_tbl <- read_rds("app_data/retail_clean_data.rds")
+retail_data <- read_rds("app_data/retail_clean_data.rds")
 
 # * CLV Data ----
-clv_pred_tbl <- read_rds("app_artifacts/clv_artifacts_list.rds")[[2]][[3]] %>% 
-    left_join(fp_tbl %>% select(customer_id, country))
+clv_pred_data <- read_rds("app_artifacts/clv_artifacts_list.rds")[[2]][[3]] %>% 
+    left_join(first_purchase_data %>% select(customer_id, country))
 
-customer_country_tbl <- clv_pred_tbl %>%
+# * Country Data ----
+customer_country_data <- clv_pred_data %>%
     select(customer_id, country) %>%
     distinct() %>%
     arrange(country) %>%
     mutate(customer_id = as.character(customer_id))
 
-ids_for_pr_recommender <- clv_pred_tbl %>% 
+ids_for_pr_recommender <- clv_pred_data %>% 
   filter(spend_90_flag == 1) %>% 
   pull(customer_id)
+
+# * Forecast Data ----
+future_forecast_data <- read_rds("app_artifacts/forecast_artifacts_list.rds")$data$future_forecast_tbl
 
 
 # ******************************************************************************
@@ -77,8 +89,8 @@ ui <- tagList(
                         pickerInput(
                             inputId  = "country_picker",
                             label    = h4("Select Country"),
-                            choices  = sort(unique(customer_country_tbl$country)),
-                            selected = sort(unique(customer_country_tbl$country)),
+                            choices  = sort(unique(customer_country_data$country)),
+                            selected = sort(unique(customer_country_data$country)),
                             multiple = TRUE,
                             options  = list(
                                 `actions-box`          = TRUE,
@@ -119,6 +131,20 @@ ui <- tagList(
                         
                         # ** Fluid Row 1 ----
                         fluidRow(
+                          
+                          # *** Column 1 ----
+                          column(
+                            width = 12,
+                            box(
+                              width = 24,
+                              tags$h3("Product Recommender"),
+                              get_clv_tab_info_text()
+                            )               
+                          )
+                        ),
+                        
+                        # ** Fluid Row 1 ----
+                        fluidRow(
                             
                             # *** Column 1 ----
                             column(
@@ -127,8 +153,8 @@ ui <- tagList(
                                     width = 12,
                                     tags$fieldset(
                                         tags$legend(
-                                            "Future Forecast", 
-                                            tags$span(id = "ff_plot_info", icon("info-circle"))
+                                            "CLV: Probability of Future Spend", 
+                                            tags$span(id = "info1", icon("info-circle"))
                                         ),
                                         plotlyOutput("spend_prob_p", height = "400px")
                                         #dataTableOutput("test")
@@ -143,7 +169,7 @@ ui <- tagList(
                                     width = 12,
                                     tags$fieldset(
                                         tags$legend(
-                                            "CLV Features Plot", 
+                                            "CLV: Key Features For Future Spend", 
                                             tags$span(id = "info2", icon("info-circle"))
                                         ),
                                         plotlyOutput("features_p", height = "400px")
@@ -163,14 +189,36 @@ ui <- tagList(
                                     width = 24,
                                     tags$fieldset(
                                         tags$legend(
-                                            "CLV Features Data", 
+                                            "CLV: Features Data", 
                                             tags$span(id = "info3", icon("info-circle"))
                                         ),
                                         dataTableOutput("clv_data", height = "400px")
                                     )
                                 )
                             ) 
+                        ),
+                        
+                        bsPopover(
+                          id        = "info1", 
+                          title     = "Probability of Future Spend",
+                          content   = "Use this plot to analyze trend.",
+                          placement = "left"
+                        ),
+                        
+                        bsPopover(
+                          id        = "info2", 
+                          title     = "Key Features",
+                          content   = "Use this plot to analyze how key features affect future spend probability",
+                          placement = "left"
+                        ),
+                        
+                        bsPopover(
+                          id        = "info3", 
+                          title     = "Data",
+                          content   = "Datatable with clv spend probabilty and key features data.",
+                          placement = "left"
                         )
+                        
                         
                     ) # end clv analysis mainPanel
                 )
@@ -191,8 +239,8 @@ ui <- tagList(
                         pickerInput(
                             inputId  = "country_picker_2",
                             label    = h4("Select Country"),
-                            choices  = sort(unique(customer_country_tbl$country)),
-                            selected = sort(unique(customer_country_tbl$country)),
+                            choices  = sort(unique(customer_country_data$country)),
+                            selected = sort(unique(customer_country_data$country)),
                             multiple = TRUE,
                             options  = list(
                                 `actions-box`          = TRUE,
@@ -236,14 +284,7 @@ ui <- tagList(
                           box(
                             width = 24,
                             tags$h3("Product Recommender"),
-                            HTML(
-                              "
-                              <p>This tab contains info on personalized product recommendations for each customer. The product
-                              recommendations are based on similarities among customers, meaning product recommendations for a
-                              particular customer are based on what other similar customers have purchased in the past.
-                              To learn more on user-based collaborative filtering, visit
-                              <a href='https://en.wikipedia.org/wiki/Collaborative_filtering'>this link.</a></p>
-                              ")
+                            get_product_recommender_tab_info_text()
                           )               
                         )
                       ),
@@ -278,7 +319,88 @@ ui <- tagList(
                     )
                 )
             )
-        ) # end product recommender tabPanel
+        ), # end product recommender tabPanel
+        
+        tabPanel(
+          title = "Forecast",
+          
+          fluidPage(
+            
+            # *** Fluid Row 1 ----
+            fluidRow(
+              
+              # *** Column 1 ----
+              column(
+                width = 12,
+                box(
+                  width = 24,
+                  tags$h3("Forecast Information"),
+                  get_forecast_tab_info_text()
+                )               
+              )
+            ),
+            
+            # ** Fluid Row 1 ----
+            fluidRow(
+              
+              # *** Column 1 ----
+              column(
+                width = 4,
+                box(
+                  width = 12,
+                  tags$h3("Forecast (Total)"),
+                  plotlyOutput("forecast_plot_all", height = "300px")
+                )
+              ),
+              
+              # *** Column 12----
+              column(
+                width = 4,
+                box(
+                  width = 12,
+                  tags$h3("Forecast (United Kingdom)"),
+                  plotlyOutput("forecast_plot_uk", height = "300px")
+                )
+              ),
+              
+              # *** Column 1 ----
+              column(
+                width = 4,
+                box(
+                  width = 12,
+                  tags$h3("Forecast (All Other Countries)"),
+                  plotlyOutput("forecast_plot_others", height = "300px")
+            
+                )
+              )
+              
+            ),
+            
+            # ** Fluid Row 2
+            fluidRow(
+              
+              # Column 1 ----
+              column(
+                width = 12,
+                box(
+                  width = 24,
+                  tags$h3("Forecast Data"),
+                  downloadButton(
+                    outputId = "download_forecast_data",
+                    label    = "Download Data"
+                  ),
+                  
+                  br(),
+                  
+                  dataTableOutput("forecast_data_dt")
+                  
+                )
+              )
+              
+            )
+           
+          )
+        )
     )
 
   
@@ -298,7 +420,7 @@ server <- function(input, output) {
     # ** CLV Data Filtered ----
     clv_filtered_tbl <- reactive({
         
-        clv_pred_tbl %>%
+        clv_pred_data %>%
             get_scatter_plot_data() %>% 
             filter(country %in% input$country_picker) %>% 
             sample_frac(size = input$sample_prop)
@@ -356,7 +478,7 @@ server <- function(input, output) {
     # ** Update Filtering Logic ----
     observe({
       
-      x <- customer_country_tbl %>% 
+      x <- customer_country_data %>% 
         filter(country %in% input$country_picker_2) %>% 
         select(customer_id)
       
@@ -372,13 +494,13 @@ server <- function(input, output) {
     })
     
     # ** Product Recommender Data Filtered ----
-    start_date              <- max(rdc_tbl$invoice_date) - 90
-    end_date                <- max(rdc_tbl$invoice_date)
+    start_date              <- max(retail_data$invoice_date) - 90
+    end_date                <- max(retail_data$invoice_date)
     
     pr_recommender_filtered_tbl <- reactive({
       
-      rdc_tbl %>% 
-        filter(customer_id %in% clv_pred_tbl$customer_id) %>% 
+      retail_data %>% 
+        filter(customer_id %in% clv_pred_data$customer_id) %>% 
         filter(between(invoice_date, start_date, end_date))
       
     })
@@ -412,10 +534,77 @@ server <- function(input, output) {
         )
     })
     
+    # **************************************************************************
+    
+    # Forecast Tab Server Functions ----
+    
+    # ** Forecast Data Filtered ----
+    future_forecast_data_filtered <- reactive({future_forecast_data})
+    
+    # ** Forecast Plot (All) ----
+    output$forecast_plot_all <- renderPlotly({
+      
+      future_forecast_data_filtered() %>% 
+        get_forecast_data() %>%
+        plot_modeltime_forecast(
+          .title       = "",
+          .legend_show = FALSE
+        )
+      
+    })
+    
+    # ** Forecast Plot (UK) ----
+    output$forecast_plot_uk <- renderPlotly({
+      
+      future_forecast_data_filtered() %>% 
+        get_forecast_data(.country = "United Kingdom") %>%
+        plot_modeltime_forecast(
+          .title       = "",
+          .legend_show = FALSE
+        )
+      
+    })
+    
+    # ** Forecast Plot (All Others) ----
+    output$forecast_plot_others <- renderPlotly({
+      
+      future_forecast_data_filtered() %>% 
+        get_forecast_data(.country = "All Others") %>%
+        plot_modeltime_forecast(
+          .title       = "",
+          .legend_show = FALSE
+        )
+      
+    })
     
     
+    # ** Forecast Datatable ----
+    output$forecast_data_dt <- renderDataTable({
+      
+      future_forecast_data_filtered() %>% 
+        get_forecast_data_dt()
+    })
     
-
+    # ** Download Handler ----
+    output$download_forecast_data <- downloadHandler(
+      
+      filename = function(){
+        paste("future_forecast", "csv", sep = ".")
+      },
+      
+      content = function(file){
+        write.csv(
+          future_forecast_data_filtered() %>% 
+            get_forecast_data_dt(),
+          file
+        )
+      }
+    )
+   
+      
+    
+    
+   
     
     
 
