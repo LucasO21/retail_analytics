@@ -129,6 +129,18 @@ ui <- tagList(
               
             )
             
+          ),
+          
+          # ** Inspiration Info ----
+          fluidRow(
+            column(
+              width = 12,
+              box(
+                title = h3("Information", align = "center"),
+                width = 24,
+                get_home_tab_info_text()
+              )
+            )
           )
         ),
           

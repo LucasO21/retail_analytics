@@ -6,6 +6,43 @@ library(shiny)
 library(plotly)
 library(DT)
 
+
+# # CLV Tab Box ----
+# get_clv_tab_box <- function(){
+#     
+#     box(
+#         title = h3("CLV Analysis Tab", align = "center"),
+#         width = 4,
+#         footer = h5("View 90 Day Spend Probability For Customers", align = "center"),
+#         div(
+#             tags$img(id     = "customer",
+#                      src    = "customer.png",
+#                      height = "20%",
+#                      width  = "50%"),
+#             style = "text-align: center;"
+#         )
+#         
+#     )
+#     
+# }
+
+# Home Tab Information Box ----
+get_home_tab_info_text <- function(){
+    
+    HTML(
+        "
+        <p> App Creator: Lucas Okwudishu. Get in touch on <a href = 'https://www.linkedin.com/in/lucasokwudishu/'>Linkedin,</a>
+        or view sourcode on <a href = 'https://github.com/LucasO21/retail_analytics'>Github.</a>
+        </p>
+        
+        <p> Inspiration: <a href = 'https://www.business-science.io/'>Business Science University</a> Learning Lab 58.</p>
+        
+        <p> Dataset: <a href = 'https://www.kaggle.com/datasets/mashlyn/online-retail-ii-uci'>Online Retaill Dataset.</a></p>
+        "
+    )
+    
+}
+
 # CLV Tab Info Text ----
 get_clv_tab_info_text <- function(){
     
