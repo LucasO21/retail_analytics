@@ -535,6 +535,30 @@ server <- function(input, output) {
         )
     })
     
+    # ** Product Recommender Data Download ----
+    output$download_pr_data <- downloadHandler(
+      
+      filename = function(){
+        paste("product_recommendation", "csv", sep = ".")
+      },
+      
+      content = function(file){
+        write.csv(
+          pr_recommender_filtered_tbl() %>% 
+            get_user_item_matrix() %>% 
+            get_user_to_user_cosine_matrix() %>%
+            get_user_product_recommendations(
+              .sales_data  = pr_recommender_filtered_tbl(),
+              .customer_id = input$customer_id,
+              .n_closest   = 3
+            ),
+          file
+        )
+      }
+    )
+    
+    
+    
     # **************************************************************************
     
     # * Forecast Tab Server Functions ----
@@ -586,7 +610,7 @@ server <- function(input, output) {
         get_forecast_data_dt()
     })
     
-    # ** Download Handler ----
+    # ** Forecast Data Download ----
     output$download_forecast_data <- downloadHandler(
       
       filename = function(){
