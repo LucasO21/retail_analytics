@@ -21,6 +21,7 @@ library(shinyWidgets)
 library(shinydashboard)
 library(shinyBS)
 library(shinyjs)
+library(rintrojs)
 
 # * Visualization ----
 library(plotly)
@@ -71,13 +72,41 @@ future_forecast_data <- read_rds("app_artifacts/forecast_artifacts_list.rds")$da
 # ******************************************************************************
 ui <- tagList(
     useShinydashboard(),
+    useShinyjs(),
+    introjsUI(),
+    
     
     navbarPage(
         title = "Retail Analytics App",
         
+        # * Home Tab ----
+        tabPanel(
+          title = "Home",
+          
+          box(
+            title = h3("CLV Analysis Tab", align = "center"),
+            width = 4,
+            footer = h5("View 90 Day Spend Probability For Customers", align = "center"),
+            
+            div(
+              tags$img(id     = "shopping_cart",
+                       src    = "shopping-cart.png", 
+                       style  = "cursor:pointer;",
+                       height = "20%", 
+                       width  = "50%"),
+              style = "text-align: center;"
+            )
+            
+          )
+          
+          
+          
+        ),
+        
         # * CLV Analysis Tab ----
         tabPanel(
-            title = "CLV Analysis",
+            title = "CLV Analysis", 
+            value = "clv_analysis_tab",
             fluidPage(
                 sidebarLayout(
                     
@@ -413,6 +442,16 @@ ui <- tagList(
 # SERVIER ----
 # ******************************************************************************
 server <- function(input, output) {
+  
+  # * Home Tab Server Functions ----
+  shinyjs::onclick(
+    "shopping_cart",
+    updateTabsetPanel(
+      session  = getDefaultReactiveDomain(),
+      inputId  = "navbar",
+      selected = "clv_analysis_tab"
+    )
+  )
     
     # * CLV Tab Server Functions ----
     
