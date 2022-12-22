@@ -34,6 +34,8 @@
 
 get_forecast_data <- function(data, 
                               .country = NULL){
+  
+  start_date <- as.Date("2011-01-01")
     
     if(is.null(.country)){
         data_prep <-  data 
