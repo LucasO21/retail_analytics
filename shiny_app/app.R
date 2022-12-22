@@ -23,6 +23,7 @@ library(shinydashboard)
 library(shinyBS)
 library(shinyjs)
 library(rintrojs)
+library(bslib)
 
 # * Visualization ----
 library(plotly)
@@ -38,6 +39,44 @@ source("app_functions/ui_server_functions.R")
 source("app_functions/clv_functions.R")
 source("app_functions/pr_functions.R")
 source("app_functions/forecast_functions.R")
+
+# * App Attributes ----
+TITLE      <- "Retail Analytics App"
+FIRST_TAB  <- "Home"
+SECOND_TAB <- "CLV Analysis"
+THIRD_TAB  <- "Product Recommender"
+FOURTH_TAB <- "Forecast"
+
+FONT_HEADING <- "Montserrat"
+FONT_BASE    <- "Open Sans"
+PRIMARY      <- "#2C3E50"
+SUCCESS      <- "#18BC9C"
+INFO         <- "#A6CEE3"
+WARNING      <- "#FDBF6F"
+DANGER       <- "#E31A1C"
+FG           <- PRIMARY
+BG           <- "#FFFFFF"
+  
+app_theme_base <- bs_theme(
+  font_scale   = 1.0,
+  heading_font = font_google(FONT_HEADING, wght = c(300, 400, 500, 600, 700, 800), ital = c(0, 1)),
+  base_font    = font_google(FONT_BASE, wght = c(300, 400, 500, 600, 700, 800), ital = c(0, 1)),
+  primary      = PRIMARY,
+  success      = SUCCESS,
+  info         = INFO, 
+  warning      = WARNING, 
+  danger       = DANGER,
+  fg           = FG,
+  bg           = BG,
+  "navbar-bg"  = PRIMARY,
+  "body-color" = PRIMARY, 
+  "accordion-button-active-bg"    = "white",
+  "accordion-button-active-color" = PRIMARY,
+  "bs-accordion-color" = PRIMARY,
+  "light" = BG
+)
+
+
 
 
 # ******************************************************************************
@@ -87,6 +126,10 @@ ui <- tagList(
         # * Home Tab ----
         tabPanel(
           title = "Home", icon = icon("home"),
+          # tags$img(
+          #   src = "background_home.jpg",
+          #   style = 'position: absolute'
+          # ),
           mainPanel(
             width = 12,
           
@@ -99,7 +142,8 @@ ui <- tagList(
                 box(
                 width = 24,
                 title = h1("Welcome to the Retail Analytics Application"),
-                h3("A project to deliver analytics solutions for a hypothetical online retailer")
+                h3("A project to deliver analytics solutions for a hypothetical online retailer."),
+                h4("Click on any box below to explore solution.")
               )
             )
           ),
@@ -727,11 +771,6 @@ server <- function(input, output) {
         )
       }
     )
-   
-      
-    
-    
-   
     
     
 
