@@ -1,32 +1,49 @@
 # FUNCTIONS FOR APP UI ----
 # **** ----
 
+# ******************************************************************************
+# SETUP ----
+# ******************************************************************************
+
 # Libraries ----
 library(shiny)
 library(plotly)
 library(DT)
 
 
-# # CLV Tab Box ----
-# get_clv_tab_box <- function(){
-#     
-#     box(
-#         title = h3("CLV Analysis Tab", align = "center"),
-#         width = 4,
-#         footer = h5("View 90 Day Spend Probability For Customers", align = "center"),
-#         div(
-#             tags$img(id     = "customer",
-#                      src    = "customer.png",
-#                      height = "20%",
-#                      width  = "50%"),
-#             style = "text-align: center;"
-#         )
-#         
-#     )
-#     
-# }
+# ******************************************************************************
+# HOME TAB UI FUNCTIONS ----
+# ******************************************************************************
 
-# Home Tab Information Box ----
+# * Boxes With Hyperlinks ----
+get_box_hyperlink <- function(.input_id,
+                              .label,
+                              .footer,
+                              .img_id,
+                              .src_name,
+                              .height,
+                              .width){
+    
+    box(
+        width = 4,
+        actionLink(inputId = .input_id, label = h3(.label, align = "center")),
+        actionLink(
+            inputId = .input_id,
+            label =   div(
+                tags$img(id     = .img_id,
+                         src    = .src_name,
+                         height = .height,
+                         width  = .width),
+                style = "text-align: center;"
+            )
+        ),
+        actionLink(inputId = .input_id, label = h5(.footer, align = "center"))
+    )
+    
+    
+}
+
+# * Information Box ----
 get_home_tab_info_text <- function(){
     
     HTML(
@@ -43,7 +60,12 @@ get_home_tab_info_text <- function(){
     
 }
 
-# CLV Tab Info Text ----
+
+# ******************************************************************************
+# CLV TAB UI FUNCTIONS ----
+# ******************************************************************************
+
+# * CLV Tab Info Text ----
 get_clv_tab_info_text <- function(){
     
     HTML(
@@ -57,7 +79,11 @@ get_clv_tab_info_text <- function(){
 }
 
 
-# Product Recommender Tab Info Text ----
+# ******************************************************************************
+# PRODUCT RECOMMENDER TAB UI FUNCTIONS ----
+# ******************************************************************************
+
+# * Product Recommender Tab Info Text ----
 get_product_recommender_tab_info_text <- function(){
     
     HTML(
@@ -73,7 +99,11 @@ get_product_recommender_tab_info_text <- function(){
         )
 }
 
-# Forecast Tab Info Text ----
+# ******************************************************************************
+# FORECAST TAB UI FUNCTIONS ----
+# ******************************************************************************
+
+# * Forecast Tab Info Text ----
 get_forecast_tab_info_text <- function(){
     
     HTML(

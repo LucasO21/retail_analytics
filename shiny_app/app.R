@@ -14,6 +14,7 @@
 library(tidyverse)
 library(janitor)
 library(lubridate)
+library(timetk)
 
 # * Shiny ----
 library(shiny)
@@ -30,6 +31,7 @@ library(DT)
 # * Modeling ----
 library(xgboost)
 library(coop)
+library(modeltime)
 
 # * Source ----
 source("app_functions/ui_server_functions.R")
@@ -74,61 +76,64 @@ ui <- tagList(
     useShinydashboard(),
     useShinyjs(),
     introjsUI(),
+    tags$script(src="https://kit.fontawesome.com/77fcf700e6.js"),
     
     
     navbarPage(
-        title = "Retail Analytics App",
+      id = "tabset",
+      title = "Retail Analytics App",
+        
         
         # * Home Tab ----
         tabPanel(
-          title = "Home",
+          title = "Home", icon = icon("home"),
+          mainPanel(
+            width = 12,
+          
+          
+          
+          # Intro Box Info ----
+          fluidRow(
+            column(
+              width = 12,
+                box(
+                width = 24,
+                title = h1("Welcome to the Retail Analytics Application"),
+                h3("A project to deliver analytics solutions for a hypothetical online retailer")
+              )
+            )
+          ),
+        
           
           fluidRow(
             
-            # CLV Tab Box ----
-            box(
-              title = h3("CLV Analysis Tab", align = "center"),
-              width = 4,
-              footer = h5("View 90 Day Spend Probability For Customers", align = "center"),
-              div(
-                tags$img(id     = "customer",
-                         src    = "customer.png",
-                         height = "20%",
-                         width  = "50%"),
-                style = "text-align: center;"
-              )
-
+            # * CLV Tab Box ----
+            get_box_hyperlink(
+              .input_id = "home_clv_link",
+              .label    = "Customer Lifetime Value Tab",
+              .footer   = "View 90 Day Spend Probability For Customers",
+              .img_id    = "customer", .src_name = "hand-holding-dollar-solid.svg",
+              .height = "30%", .width = "30%"
             ),
             
             # ** Product Recommender Tab Box ----
-            box(
-              title = h3("Product Recommender Tab", align = "center"),
-              width = 4,
-              footer = h5("View Product Recommendations For Customers", align = "center"),
-              div(
-                tags$img(id     = "shopping_cart",
-                         src    = "shopping-cart.png",
-                         height = "20%",
-                         width  = "50%"),
-                style = "text-align: center;"
-              )
-              
+            get_box_hyperlink(
+              .input_id = "home_pr_link",
+              .label    = "Product Recommender Tab",
+              .footer   = "View Product Recommendations For Customers",
+              .img_id   = "shopping_cart", .src_name = "cart-shopping-solid.svg",
+              .height = "30%", .width = "30%"
             ),
-            
-            box(
-              title = h3("Forecast Tab", align = "center"),
-              width = 4,
-              footer = h5("View 90 Day Forecast by Country", align = "center"),
-              div(
-                tags$img(id     = "business",
-                         src    = "business.png",
-                         height = "20%",
-                         width  = "50%"),
-                style = "text-align: center;"
-              )
-              
+
+            # ** Forecast Tab Box ----
+            get_box_hyperlink(
+              .input_id = "home_forecast_link",
+              .label    = "Forecast Tab",
+              .footer   = "View 90 Day Product Forecast",
+              .img_id   = "business", .src_name = "arrow-trend-up-solid.svg",
+              .height = "30%", .width = "30%"
             )
-            
+      
           ),
           
           # ** Inspiration Info ----
@@ -142,7 +147,9 @@ ui <- tagList(
               )
             )
           )
-        ),
+          
+        )
+      ),
           
          
           
@@ -152,8 +159,8 @@ ui <- tagList(
         
         # * CLV Analysis Tab ----
         tabPanel(
-            title = "CLV Analysis", 
-            value = "clv_analysis_tab",
+            title = "CLV Analysis", icon = icon("hand-holding-dollar"),
+            value = "tab1",
             fluidPage(
                 sidebarLayout(
                     
@@ -303,7 +310,9 @@ ui <- tagList(
         
         # * Product Recommender ----
          tabPanel(
-             title = "Product Recommender",
+             title = "Product Recommender", icon = icon("cart-shopping"),
+             value = "tab2",
+             
              fluidPage(
                 sidebarLayout(
 
@@ -399,7 +408,8 @@ ui <- tagList(
         
         # * Forecast Tab ----
         tabPanel(
-          title = "Forecast",
+          title = "Forecast", icon = icon("arrow-trend-up"),
+          value = "tab3",
           
           fluidPage(
             
@@ -491,9 +501,19 @@ ui <- tagList(
 server <- function(input, output) {
   
   # * Home Tab Server Functions ----
-  observeEvent(input$link1, { #OBSERVER THAT CHANGES TAB WHEN LINK IS CLICKED
+  observeEvent(input$home_clv_link, { 
     updateTabsetPanel(inputId = "tabset", selected = "tab1")
-    updateTabsetPanel(inputId = "tab1_inner", selected = "Summary")
+    
+  })
+  
+  observeEvent(input$home_pr_link, { 
+    updateTabsetPanel(inputId = "tabset", selected = "tab2")
+    
+  })
+  
+  observeEvent(input$home_forecast_link, { 
+    updateTabsetPanel(inputId = "tabset", selected = "tab3")
+    
   })
     
     # * CLV Tab Server Functions ----

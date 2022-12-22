@@ -262,7 +262,7 @@ future_forecast_tbl %>%
     filter(invoice_date >= as.Date("2011-05-01")) %>% 
     group_by(country) %>% 
     plot_modeltime_forecast(
-        .facet_ncol          = 1
+        .facet_ncol     = 1
     )
 
 # ******************************************************************************
