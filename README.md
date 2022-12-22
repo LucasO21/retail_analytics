@@ -2,7 +2,7 @@
 
 ================================================================================
 
-<img src="/Users/BachataLu/Desktop/School/2023_projects/retail_analytics/png/home.png"/>
+
 
 ### __Project Overview__
 * __Goal:__ Create a 3 part retail analytics solution for an online retailer. 
@@ -33,9 +33,7 @@ Additionally, this analysis focuses on a particular cohort of customers, i.e the
 customers with a first purchase date in Q1 2010. This represents the largest 
 cohort of customers in terms of first purchase dates. 
 
-
-![](png/customer_red.png){height="50%" width="50%"}
-
+![](png/customer_red.png)
 
 Fore customer 15125 in the examples above, the model predicted a high probability 
 of making a purchase in the next 90 days (92%). However while this customer did 
