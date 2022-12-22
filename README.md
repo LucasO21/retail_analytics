@@ -18,7 +18,7 @@ cohort of customers in terms of first purchase dates.
 
 
 <div style="display:flex; justify-content:center;">
-<img img src="/Users/BachataLu/Desktop/School/2023_projects/retail_analytics/png/customer_red.png" alt="image1" style="width:40%;margin-right:10px;">
+<img img src="/Users/BachataLu/Desktop/School/2023_projects/retail_analytics/png/customer_red.png" style="width:40%;margin-right:10px;">
 <img img src="/Users/BachataLu/Desktop/School/2023_projects/retail_analytics/png/customer_green.png" alt="image2" style="width:40%;margin-right:10px;">
 </div>
 
