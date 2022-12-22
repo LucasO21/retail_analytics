@@ -5,8 +5,11 @@
 # SETUP ----
 # ******************************************************************************
 
-# *Set Working Dir ----
+# * Set Working Dir ----
 # setwd(here::here("shiny_app"))
+
+# * Package Requirements ----
+# remotes::install_github("mdancho84/bslib")
 
 # Libraries ----
 
@@ -56,20 +59,20 @@ WARNING      <- "#FDBF6F"
 DANGER       <- "#E31A1C"
 FG           <- PRIMARY
 BG           <- "#FFFFFF"
-  
+
 app_theme_base <- bs_theme(
   font_scale   = 1.0,
   heading_font = font_google(FONT_HEADING, wght = c(300, 400, 500, 600, 700, 800), ital = c(0, 1)),
   base_font    = font_google(FONT_BASE, wght = c(300, 400, 500, 600, 700, 800), ital = c(0, 1)),
   primary      = PRIMARY,
   success      = SUCCESS,
-  info         = INFO, 
-  warning      = WARNING, 
+  info         = INFO,
+  warning      = WARNING,
   danger       = DANGER,
   fg           = FG,
   bg           = BG,
   "navbar-bg"  = PRIMARY,
-  "body-color" = PRIMARY, 
+  "body-color" = PRIMARY,
   "accordion-button-active-bg"    = "white",
   "accordion-button-active-color" = PRIMARY,
   "bs-accordion-color" = PRIMARY,
@@ -107,6 +110,15 @@ ids_for_pr_recommender <- clv_pred_data %>%
 # * Forecast Data ----
 future_forecast_data <- read_rds("app_artifacts/forecast_artifacts_list.rds")$data$future_forecast_tbl
 
+# * Theme ----
+# bs_theme_new()
+# 
+# bs_theme_add_variables(
+#   
+#   "body-pg" = "pink"
+    
+# )
+
 
 # ******************************************************************************
 # UI ----
@@ -115,10 +127,11 @@ ui <- tagList(
     useShinydashboard(),
     useShinyjs(),
     introjsUI(),
+    # shiny::bootstrapLib(),
     tags$script(src="https://kit.fontawesome.com/77fcf700e6.js"),
     
-    
     navbarPage(
+      theme = app_theme_base,
       id = "tabset",
       title = "Retail Analytics App",
         
@@ -542,7 +555,12 @@ ui <- tagList(
 # ******************************************************************************
 # SERVIER ----
 # ******************************************************************************
-server <- function(input, output) {
+server <- function(input, output, session) {
+  
+  # * Theme ----
+  # observe({session$setCurrentTheme(app_theme_base)})
+  
+  # observe({bs_theme(version = 5)})
   
   # * Home Tab Server Functions ----
   observeEvent(input$home_clv_link, { 
