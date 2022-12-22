@@ -2,6 +2,8 @@
 
 ================================================================================
 
+<img src="/Users/BachataLu/Desktop/School/2023_projects/retail_analytics/png/home.png"/>
+
 ### __Project Overview__
 * __Goal:__ Create a 3 part retail analytics solution for an online retailer. 
 * __Data:__ Dataset is the popular online retail dataset from [Kaggle](https://www.kaggle.com/datasets/mashlyn/online-retail-ii-uci).
@@ -20,7 +22,7 @@
 
 ================================================================================
 
-### __Solution Details___
+### __Solution Details__
 
 #### __Solution 1: Customer Lifetime Value (CLV)__ 
 This solution benefits the marketing team by using machine learning to 
@@ -65,9 +67,9 @@ customers to customers based on what similar customers have purchased in the pri
 90 days. For example we see that customer 15125 purchased $3K less than predicted. We can 
 recommend new products to this customer based on what similar customers have purchased.
 
-<p align="center">
+
 ![](png/pr_recommend.png)
-</p>
+
 
 __Caveat -__ This analysis use [user-based collaborative filtering](https://www.geeksforgeeks.org/user-based-collaborative-filtering/), which recommends 
 products based on what similar customers have purchased. Meaning that a customer has 
@@ -84,8 +86,7 @@ all other countries. This is due to the fact that the UK accounts for 85% of pro
 sales (on average). Once again this forecast benefits the marketing, sale and purchasing
 teams with planning inventory levels for future sales. 
 
-<p align="center">
 ![](png/forecast.png)
-</p>
+
 
 
