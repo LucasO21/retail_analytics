@@ -27,6 +27,7 @@ library(shinyBS)
 library(shinyjs)
 library(rintrojs)
 library(bslib)
+library(shinythemes)
 
 # * Visualization ----
 library(plotly)
@@ -75,8 +76,8 @@ app_theme_base <- bs_theme(
   "body-color" = PRIMARY,
   "accordion-button-active-bg"    = "white",
   "accordion-button-active-color" = PRIMARY,
-  "bs-accordion-color" = PRIMARY,
-  "light" = BG
+  "bs-accordion-color"            = PRIMARY,
+  "light"                         = BG
 )
 
 
@@ -131,7 +132,8 @@ ui <- tagList(
     tags$script(src="https://kit.fontawesome.com/77fcf700e6.js"),
     
     navbarPage(
-      theme = app_theme_base,
+      # theme = app_theme_base,
+      theme = shinytheme("sandstone"),
       id = "tabset",
       title = "Retail Analytics App",
         
