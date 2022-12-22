@@ -2,10 +2,6 @@
 
 ================================================================================
 
-<p align="center">
-![](png/home.png) 
-</p>
-
 ### __Project Overview__
 * __Goal:__ Create a 3 part retail analytics solution for an online retailer. 
 * __Data:__ Dataset is the popular online retail dataset from [Kaggle](https://www.kaggle.com/datasets/mashlyn/online-retail-ii-uci).
@@ -35,9 +31,9 @@ Additionally, this analysis focuses on a particular cohort of customers, i.e the
 customers with a first purchase date in Q1 2010. This represents the largest 
 cohort of customers in terms of first purchase dates. 
 
-<p align="center">
+
 ![](png/customer_red.png) 
-</p>
+
 
 Fore customer 15125 in the examples above, the model predicted a high probability 
 of making a purchase in the next 90 days (92%). However while this customer did 
@@ -47,9 +43,9 @@ out to and recommend additional products to purchase (see product recommender ta
 try and increase their future spend. In contrast, we can see analysis for customer
 17340 below.
 
-<p align="center">
+
 ![](png/customer_green.png) 
-</p>
+
 
 This customer also had a high probability of making a purchase and did spend $2K higher than
 the model predicted ($4759 actual vs $2671 predicted). This customer will be a prime candidate
