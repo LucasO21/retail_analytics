@@ -34,7 +34,7 @@ customers with a first purchase date in Q1 2010. This represents the largest
 cohort of customers in terms of first purchase dates. 
 
 
-![](png/customer_red.png) 
+![](png/customer_red.png){height="50%" width="50%"}
 
 
 Fore customer 15125 in the examples above, the model predicted a high probability 
