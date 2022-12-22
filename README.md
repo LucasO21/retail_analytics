@@ -42,9 +42,7 @@ customers to customers based on what similar customers have purchased in the pri
 90 days. For example we see that customer 15125 purchased $3K less than predicted. We can 
 recommend new products to this customer based on what similar customers have purchased.
 
-<div style="display:flex; justify-content:center;">
-<img img src=/Users/BachataLu/Desktop/School/2023_projects/retail_analytics/png/pr_recommend.png alt="image2" style="width:100%;margin-right:10px;">
-</div>
+![Product Recommender for Customer 15125!](/Users/BachataLu/Desktop/School/2023_projects/retail_analytics/png/pr_recommend.png)
 
 __Caveat -__ This analysis use [user-based collaborative filtering](https://www.geeksforgeeks.org/user-based-collaborative-filtering/), which recommends 
 products based on what similar customers have purchased. Meaning that a customer has 
@@ -55,5 +53,5 @@ situations where an [item-based collaborative filtering](https://www.geeksforgee
 
 #### __Forecast___
 
-![alt text](/Users/BachataLu/Desktop/School/2023_projects/retail_analytics/png/pr_recommend.png){:height="50%" width="50%"}
+
 
