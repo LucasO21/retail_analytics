@@ -287,6 +287,181 @@ n_cores <- 4
 plan(strategy = cluster, workers = makeCluster(n_cores))
 
 
+# * Ranger Tune ----
+
+# ** Model Spec ----
+model_spec_rf_tune <- rand_forest(
+    mode  = "regression",
+    mtry  = tune(),
+    trees = tune(),
+    min_n = tune()
+) %>% 
+    set_engine("ranger")
+
+wflw_spec_rf_tune <- workflow() %>% 
+    add_model(model_spec_rf_tune) %>% 
+    add_recipe(recipe_spec %>% step_rm(invoice_date))
+
+# ** Tuning ----
+tic()
+set.seed(123)
+tune_results_rf <- wflw_spec_rf_tune %>% 
+    tune_grid(
+        resamples = resamples_kfold,
+        grid      = 10,
+        control   = control_grid(verbose = TRUE, allow_par = TRUE)
+    )
+toc()
+
+# ** Results ----
+tune_results_rf %>% show_best("rmse", n = 10)
+
+# ** Finalize Models ----
+wflw_fit_rf_tuned <- wflw_spec_rf_tune %>% 
+    finalize_workflow(tune_results_rf %>% select_best("rmse")) %>% 
+    fit(train_cleaned_tbl)
+
+
+# * Earth Tune ----
+
+# ** Model Spec ----
+model_spec_earth_tune <- mars(
+    mode  = "regression",
+    num_terms   = tune(),
+    prod_degree = tune()
+) %>% 
+    set_engine("earth")
+
+wflw_spec_earth_tune <- workflow() %>% 
+    add_model(model_spec_earth_tune) %>% 
+    add_recipe(recipe_spec %>% step_rm(invoice_date))
+
+# ** Tuning ----
+tic()
+set.seed(123)
+tune_results_earth <- wflw_spec_earth_tune %>% 
+    tune_grid(
+        resamples = resamples_kfold,
+        grid      = 10,
+        control   = control_grid(verbose = TRUE, allow_par = TRUE)
+    )
+toc()
+
+# ** Results ----
+tune_results_earth %>% show_best("rmse", n = 10)
+
+# ** Finalize Models ----
+wflw_fit_earth_tuned <- wflw_spec_earth_tune %>% 
+    finalize_workflow(tune_results_earth %>% select_best("rmse")) %>% 
+    fit(train_cleaned_tbl)
+
+
+# * Xgboost Tune ----
+
+# ** Model Spec ----
+model_spec_xgboost_tune <- boost_tree(
+    mode           = "regression",
+    mtry           = tune(),
+    trees          = tune(),
+    min_n          = tune(),
+    tree_depth     = tune(),
+    learn_rate     = tune(),
+    loss_reduction = tune()
+) %>% 
+    set_engine("xgboost")
+
+wflw_spec_xgboost_tune <- workflow() %>% 
+    add_model(model_spec_xgboost_tune) %>% 
+    add_recipe(recipe_spec %>% step_rm(invoice_date))
+
+# ** Tuning ----
+tic()
+set.seed(123)
+tune_results_xgboost <- wflw_spec_xgboost_tune %>% 
+    tune_grid(
+        resamples  = resamples_kfold,
+        grid       = 10,
+        control    = control_grid(verbose = TRUE, allow_par = TRUE)
+        
+    )
+toc()
+
+# ** Results ----
+tune_results_xgboost %>% show_best("rmse", n = 5)
+
+# ** Finalize Models ----
+wflw_fit_xgboost_tuned <- wflw_spec_xgboost_tune %>% 
+    finalize_workflow(tune_results_xgboost %>% select_best("rmse")) %>% 
+    fit(train_cleaned_tbl)
+
+
+# * Cubist Tune ----
+
+# ** Model Spec ----
+model_spec_cubist <- cubist_rules(
+    mode       = "regression",
+    committees = tune(),
+    neighbors  = tune()
+) %>% 
+    set_engine("Cubist")
+
+wflw_spec_cubist_tune <- workflow() %>% 
+    add_model(model_spec_cubist) %>% 
+    add_recipe(recipe_spec %>% step_rm(invoice_date))
+
+# ** Tuning ----
+tic()
+set.seed(123)
+tune_results_cubist <- wflw_spec_cubist_tune %>% 
+    tune_grid(
+        resamples  = resamples_kfold,
+        grid       = 10,
+        control    = control_grid(verbose = TRUE, allow_par = TRUE)
+        
+    )
+toc()
+
+# ** Results ----
+tune_results_cubist %>% show_best("rmse", n = 5)
+
+# ** Finalize Models ----
+wflw_fit_cubist_tuned <- wflw_spec_cubist_tune %>% 
+    finalize_workflow(tune_results_cubist %>% select_best("rmse")) %>% 
+    fit(train_cleaned_tbl)
+
+
+# ******************************************************************************
+# EVALUATE TUNED MODELS ----
+# ******************************************************************************
+
+# * Modeltime Table ----
+tuned_models_tbl <- modeltime_table(
+    wflw_fit_rf_tuned,
+    wflw_fit_xgboost_tuned,
+    wflw_fit_earth_tuned,
+    wflw_fit_cubist_tuned
+) %>% 
+    update_model_description(1, "RANGER - Tuned") %>% 
+    update_model_description(2, "XGBOOST - Tuned") %>% 
+    update_model_description(3, "EARTH - Tuned") %>% 
+    update_model_description(4, "CUBIST - Tuned") %>% 
+    combine_modeltime_tables(fit_models_tbl)
+
+# * Calibrate ----
+tuned_models_calibration_tbl <- tuned_models_tbl %>% 
+    modeltime_calibrate(test_tbl)
+
+# * Accuracy ----
+tuned_models_accuracy_tbl <- tuned_models_calibration_tbl %>% 
+    modeltime_accuracy(test_tbl)
+
+tuned_models_accuracy_tbl %>% 
+    select(-mape, -smape) %>% 
+    arrange(rmse)
+
+
+
+
 # ******************************************************************************
 # FUTURE FORECASTS ----
 # ******************************************************************************
