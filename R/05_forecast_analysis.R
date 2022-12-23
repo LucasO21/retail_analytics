@@ -22,6 +22,7 @@ library(DBI)
 library(tidymodels)
 library(modeltime)
 library(modeltime.resample)
+library(modeltime.ensemble)
 library(rules)
 
 # ** Parallel Processing ----
@@ -518,7 +519,103 @@ model_resample_accuracy_tbl <- model_tbl_tuned_resamples %>%
     ) %>% 
     arrange(rmse_mean)
 
+
+# ******************************************************************************
+# ENSEMBLING ----
+# ******************************************************************************
+
+# * Models To Keep ----
+model_ids_to_keep <- c(8, 9, 1, 2)
+
+# * Mean Ensemble ----
+ensemble_fit_mean <- tuned_models_tbl %>% 
+    filter(.model_id %in% model_ids_to_keep) %>% 
+    ensemble_average()
+
+ensemble_models_tbl <- modeltime_table(ensemble_fit_mean)
+
+# * Accuracy ----
+ensemble_models_accuracy_tbl <- ensemble_models_tbl %>% 
+    combine_modeltime_tables(
+        tuned_models_tbl %>% 
+            filter(.model_id %in% model_ids_to_keep)
+    ) %>% 
+    modeltime_accuracy(test_tbl)
+
+ensemble_models_accuracy_tbl %>% 
+    select(-mape, -smape) %>% 
+    arrange(rmse)
+
+# * Forecast ----
+forecast_ensemble_test_tbl <- ensemble_models_tbl %>% 
+    combine_modeltime_tables(
+        tuned_models_tbl %>% 
+            filter(.model_id %in% model_ids_to_keep)
+    ) %>% 
+    modeltime_forecast(
+        new_data    = test_tbl,
+        actual_data = data_prepared_tbl,
+        keep_data   = TRUE
+    ) %>% 
+    mutate(across(.cols = c(.value, total_quantity), .fns = expm1))
+
+forecast_ensemble_test_tbl %>% 
+    group_by(country) %>% 
+    filter(invoice_date >= "2011-01-01") %>% 
+    plot_modeltime_forecast()
     
+
+# ******************************************************************************
+# REFITTING ----
+# ******************************************************************************
+
+# * Clean Full Data ----
+data_prepared_clean_tbl <- data_prepared_tbl %>% 
+    filter(country == "All Others") %>% 
+    mutate(total_quantity_cleaned = ts_clean_vec(total_quantity, period = 7)) %>% 
+    mutate(total_quantity = ifelse(invoice_date %>% between_time("2010-03-16", "2010-03-19"),
+                                   total_quantity_cleaned, total_quantity)) %>% 
+    mutate(total_quantity = ifelse(invoice_date %>% between_time("2010-08-08", "2010-08-10"),
+                                   total_quantity_cleaned, total_quantity)) %>% 
+    select(-total_quantity_cleaned) %>% 
+    bind_rows(
+        data_prepared_tbl %>% 
+            filter(country == "United Kingdom") %>% 
+            mutate(total_quantity_cleaned = ts_clean_vec(total_quantity, period = 7)) %>% 
+            mutate(total_quantity = ifelse(invoice_date %>% between_time("2010-03-22", "2010-03-24"),
+                                           total_quantity_cleaned, total_quantity)) %>% 
+            mutate(total_quantity = ifelse(invoice_date %>% between_time("2010-09-26", "2010-09-28"),
+                                           total_quantity_cleaned, total_quantity)) %>% 
+            mutate(total_quantity = ifelse(invoice_date %>% between_time("2011-01-17", "2011-01-19"),
+                                           total_quantity_cleaned, total_quantity)) %>% 
+            select(-total_quantity_cleaned)
+    ) %>% 
+    group_by(country) %>% 
+    arrange(invoice_date) %>% 
+    ungroup()
+
+# * Refit Models ----
+ensemble_refit_tbl <- ensemble_models_tbl %>% 
+    combine_modeltime_tables(
+        tuned_models_tbl %>% 
+            filter(.model_id %in% model_ids_to_keep)
+    ) %>% 
+    filter(!.model_id %in% c(4, 5)) %>% 
+    modeltime_refit(data_prepared_clean_tbl)
+
+# * Future Forecast ----
+future_forecast_tbl <- ensemble_refit_tbl %>% 
+    modeltime_forecast(
+        new_data    = future_data_tbl,
+        actual_data = data_prepared_tbl,
+        keep_data   = TRUE 
+    ) %>% 
+    mutate(.value = expm1(.value)) %>% 
+    mutate(total_quantity = expm1(total_quantity))
+
+# * Visualize Forecast ----
+future_forecast_tbl %>% 
+    plot_modeltime_forecast()
 
 
 # ******************************************************************************
@@ -532,9 +629,12 @@ forecast_artifacts_list <- list(
     
     # data
     data = list(
-        test_forecast_tbl       = test_forecast_tbl,
-        future_forecast_tbl     = future_forecast_tbl,
-        fit_models_accuracy_tbl = fit_models_accuracy_tbl
+        model_fit_accuracy       = fit_models_accuracy_tbl,
+        model_tune_accuracy      = tuned_models_accuracy_tbl,
+        model_resamples_accuracy = model_resample_accuracy_tbl,
+        test_forecast_tbl        = test_forecast_tbl,
+        future_forecast_tbl      = future_forecast_tbl,
+        fit_models_accuracy_tbl  = fit_models_accuracy_tbl
     )
     
 )
