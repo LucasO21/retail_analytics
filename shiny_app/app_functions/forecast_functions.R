@@ -16,16 +16,25 @@
 # ******************************************************************************
 # DATA IMPORT ----
 # ******************************************************************************
-forecast_artifacts_list <- read_rds("app_artifacts/forecast_artifacts_list.rds")
+# forecast_artifacts_list <- read_rds("app_artifacts/forecast_artifacts_list.rds")
+# 
+# future_forecast_tbl <- forecast_artifacts_list$data$future_forecast %>% 
+#     select(-contains("roll_"), -contains("_K1"), -contains("_lag"))
+# 
+# forecast_accuracy_tbl <- forecast_artifacts_list$data$fit_models_accuracy_tbl
+# 
+# future_forecast_tbl %>% glimpse()
+# future_forecast_tbl %>% distinct(.model_desc)
+# future_forecast_tbl %>% distinct(.key)
 
-future_forecast_tbl <- forecast_artifacts_list$data$future_forecast %>% 
-    select(-contains("roll_"), -contains("_K1"), -contains("_lag"))
-
-forecast_accuracy_tbl <- forecast_artifacts_list$data$fit_models_accuracy_tbl
-
-future_forecast_tbl %>% glimpse()
-future_forecast_tbl %>% distinct(.model_desc)
-future_forecast_tbl %>% distinct(.key)
+custom_axis_theme <- function(){
+  
+  theme(
+    axis.text = element_text(size = 10, color = "black"),
+    axis.title = element_text(size = 9),
+    plot.title = element_text(size = 18, color = "black", face = "bold")
+  )
+}
 
 
 # ******************************************************************************
@@ -35,9 +44,9 @@ future_forecast_tbl %>% distinct(.key)
 # data       <- future_forecast_tbl
 
 get_forecast_data <- function(data, 
-                              .country         = "United Kingdom",
-                              .forecast_days   = 90,
-                              .lookback_months = 6){
+                                         .country         = "United Kingdom",
+                                         .forecast_days   = 90,
+                                         .lookback_months = 11){
   
   # Look Back Start Date
   start_date <- as.Date("2011-01-01")
@@ -59,9 +68,6 @@ get_forecast_data <- function(data,
     filter(.index >= start_date) %>% 
     arrange(.index) 
   
-  data_prep %>% 
-    filter(.model_desc == "prediction")
-  
   # Forecast Days 
   if(.forecast_days < 30) .forecast_days = 30
   if(.forecast_days > 90) .forecast_days = 90
@@ -76,39 +82,86 @@ get_forecast_data <- function(data,
   
   # Look Back Days
   row_count         <- nrow(data_prep)
-  lb_rows_to_keep   <- (.lookback_months * 30)
+  lb_rows_to_keep   <- (.lookback_months * 30) + .forecast_days
   lb_rows_to_remove <- (row_count - lb_rows_to_keep)
+  lb_rows_to_keep   <- (row_count - lb_rows_to_remove)
   
-  data_prep <- data_prep %>% tail(lb_rows_to_remove)
+  data_prep <- data_prep %>% tail(lb_rows_to_keep)
+  
+  data_prep <- data_prep %>% 
+    mutate(.model_desc = case_when(
+      .model_desc == "ACTUAL" ~ paste("Trailing", .lookback_months, "Months", sep = " "),
+      TRUE                    ~ paste(.forecast_days, "Day Future Forecast")
+    )) %>% 
+    mutate(country = .country) %>% 
+    mutate(text = str_glue(
+      "
+    Date: {invoice_date}
+    Country: {country}
+    Key: {.model_desc}
+    Quantity Sold: {scales::comma(.value, accuracy = 1)}
+    "
+    )) %>% 
+    mutate(.model_desc = .model_desc %>% fct_rev()) 
   
   return(data_prep)
     
 }
 
-# future_forecast_tbl %>% 
-#   get_forecast_data("United Kingdom", .forecast_days = 30, .lookback_months = 6) %>% 
-#   plot_modeltime_forecast()
+data <-
+  future_forecast_tbl %>%
+  get_forecast_data("United Kingdom", .forecast_days = 30, .lookback_months = 3) %>%
+  select(-text)
 
+
+# ******************************************************************************
+# PLOT TIME SERIES ----
+# ******************************************************************************
+
+get_time_series_plot <- function(data){
+  
+  p <- data %>% 
+    ggplot(aes(invoice_date, .value, color = .model_desc))+
+    geom_line(size = 0.7)+
+    geom_point(aes(text = text), size = 0.01)+
+    expand_limits(y = 0)+
+    scale_y_continuous(labels = scales::comma_format(accuracy = 1))+
+    theme_minimal()+
+    custom_axis_theme()+
+    theme(
+      legend.title = element_text(size = 9),
+      legend.text = element_text(size = 8)
+    )+
+    scale_color_manual(values = c("#78c2ad", "red"))+
+    labs(y = NULL, x = NULL, color = "Legend")
+  
+  
+  p <- plotly::ggplotly(p, tooltip = "text") %>% 
+    layout(legend = list(orientation = "h", xanchor = "center", x = 0.5))
+  
+  return(p)
+  
+}
+
+# future_forecast_tbl %>% get_forecast_data() %>% get_time_series_plot()
 
 # ******************************************************************************
 # DATA PREP: DATATABLE ----
 # ******************************************************************************
-get_forecast_data_dt <- function(data){
+get_forecast_data_dt <- function(uk_data, others_data){
   
-  uk_tbl <- data %>% 
-    get_forecast_data(.country = "United Kingdom") %>% 
-    filter(.key == "prediction") %>% 
-    select(invoice_date, .value) %>% 
+  uk_tbl <- uk_data %>% 
+    select(-text) %>% 
+    select(invoice_date, .model_desc, .value) %>% 
     mutate(.value = ifelse(.value < 5, 0, .value)) %>% 
-    rename(uk_forecast = .value) 
+    rename(uk_forecast = .value)
   
-  others_tbl <- data %>% 
-    get_forecast_data(.country = "All Others") %>% 
-    filter(.key == "prediction") %>% 
-    select(invoice_date, .value) %>% 
+  others_tbl <- others_data %>% 
+    select(-text) %>% 
+    select(invoice_date, .model_desc, .value) %>% 
     mutate(.value = ifelse(.value < 5, 0, .value)) %>% 
     rename(others_forecast = .value) %>% 
-    select(-invoice_date)
+    select(-invoice_date, -.model_desc)
   
   data_prep <- bind_cols(uk_tbl, others_tbl) %>% 
     mutate(total_forecast = (uk_forecast + others_forecast), .after = invoice_date) %>% 
@@ -124,12 +177,20 @@ get_forecast_data_dt <- function(data){
       others_forecast = others_forecast %>% scales::dollar(accuracy = 1),
       uk_forecast_pct = uk_forecast_pct %>% scales::percent(accuracy = 0.1),
       others_forecast_pct = others_forecast_pct %>% scales::percent(accuracy = 0.1),
-    ) 
-  
+    ) %>% 
+    select(invoice_date, .model_desc, everything(.)) %>% 
+    rename(model_desc = .model_desc) %>% 
+    setNames(names(.) %>% str_replace_all("_", " ") %>% str_to_upper()) 
   
   return(data_prep)
     
 }
+
+# get_forecast_data_dt(
+#   uk_data     = get_forecast_data(data = future_forecast_tbl, .country = "United Kingdom"),
+#   others_data = get_forecast_data(data = future_forecast_tbl, .country = "All Others") 
+#   
+# )
 
 # future_forecast_tbl %>% get_forecast_data_dt()
 

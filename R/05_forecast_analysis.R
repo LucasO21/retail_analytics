@@ -546,6 +546,7 @@ ensemble_models_accuracy_tbl %>%
     select(-mape, -smape) %>% 
     arrange(rmse)
 
+
 # * Forecast ----
 forecast_ensemble_test_tbl <- ensemble_models_tbl %>% 
     combine_modeltime_tables(
@@ -563,6 +564,25 @@ forecast_ensemble_test_tbl %>%
     group_by(country) %>% 
     filter(invoice_date >= "2011-01-01") %>% 
     plot_modeltime_forecast()
+
+# * Accuracy by Country ----
+forecast_ensemble_test_accuracy_by_country_tbl <- forecast_ensemble_test_tbl %>% 
+    select(country, .model_desc, .index, .value) %>% 
+    pivot_wider(names_from = .model_desc, values_from = .value) %>% 
+    filter(!is.na(CUBIST)) %>% 
+    pivot_longer(cols = "ENSEMBLE (MEAN): 4 MODELS":"CUBIST") %>% 
+    group_by(country, name) %>% 
+    summarize_accuracy_metrics(
+        truth      = ACTUAL,
+        estimate   = value,
+        metric_set = default_forecast_accuracy_metric_set()
+    ) %>% 
+    ungroup() %>% 
+    select(-mape, -smape) %>% 
+    group_by(country) %>% 
+    arrange(rmse, .by_group = TRUE) %>% 
+    ungroup()
+
     
 
 # ******************************************************************************
@@ -633,6 +653,7 @@ forecast_artifacts_list <- list(
         model_tune_accuracy      = tuned_models_accuracy_tbl,
         model_resamples_accuracy = model_resample_accuracy_tbl,
         model_ensemble_accuracy  = ensemble_models_accuracy_tbl,
+        test_accuracy_by_country = forecast_ensemble_test_accuracy_by_country_tbl,
         test_forecast            = forecast_ensemble_test_tbl,
         future_forecast          = future_forecast_tbl,
         data_prepared_clean      = data_prepared_clean_tbl,
@@ -642,7 +663,7 @@ forecast_artifacts_list <- list(
     
 )
 
-forecast_artifacts_list %>% write_rds("../artifacts/forecast_artifacts_list.rds")
+forecast_artifacts_list %>% write_rds("../shiny_app/app_artifacts/forecast_artifacts_list.rds")
 
 
 

@@ -107,7 +107,7 @@ ids_for_pr_recommender <- clv_pred_data %>%
   pull(customer_id)
 
 # * Forecast Data ----
-future_forecast_data <- read_rds("app_artifacts/forecast_artifacts_list.rds")$data$future_forecast_tbl
+future_forecast_data <- read_rds("app_artifacts/forecast_artifacts_list.rds")$data$future_forecast
 
 # * Theme ----
 # bs_theme_new()
@@ -480,7 +480,7 @@ ui <- tagList(
                 
                 # *** Forecast Horizon Input ----
                 numericInput(
-                  inputId = "forecast_horizon", 
+                  inputId = "forecast_days", 
                   label   = h5("Forecast Period (Days)"),
                   min     = 30,
                   max     = 90,
@@ -518,6 +518,7 @@ ui <- tagList(
                 
               ),
               mainPanel(
+                width = 10,
               
             
             # ** Fluid Row 1 ----
@@ -538,31 +539,31 @@ ui <- tagList(
             fluidRow(
               
               # *** Column 1 ----
-              column(
-                width = 4,
-                box(
-                  width = 12,
-                  tags$h3("Forecast (Total)"),
-                  plotlyOutput("forecast_plot_all", height = "300px")
-                )
-              ),
+              # column(
+              #   width = 4,
+              #   box(
+              #     width = 12,
+              #     tags$h3("Forecast (Total)"),
+              #     plotlyOutput("forecast_plot_all", height = "300px")
+              #   )
+              # ),
               
               # *** Column 2 ----
               column(
-                width = 4,
+                width = 6,
                 box(
                   width = 12,
-                  tags$h3("Forecast (United Kingdom)"),
+                  tags$h4("Forecast (United Kingdom | 85% of Quantity Sold)"),
                   plotlyOutput("forecast_plot_uk", height = "300px")
                 )
               ),
               
               # *** Column 3 ----
               column(
-                width = 4,
+                width = 6,
                 box(
                   width = 12,
-                  tags$h3("Forecast (All Other Countries)"),
+                  tags$h4("Forecast (All Other Countries | 15% of Quantity Sold)"),
                   plotlyOutput("forecast_plot_others", height = "300px")
             
                 )
@@ -775,39 +776,55 @@ server <- function(input, output, session) {
     # ** Forecast Data Filtered ----
     future_forecast_data_filtered <- reactive({future_forecast_data})
     
-    # ** Forecast Plot (All) ----
-    output$forecast_plot_all <- renderPlotly({
+    # # ** Forecast Plot (All) ----
+    # output$forecast_plot_all <- renderPlotly({
+    #   
+    #   future_forecast_data_filtered() %>% 
+    #     get_forecast_data(
+    #   
+    #     ) %>%
+    #     plot_modeltime_forecast(
+    #       .title       = "",
+    #       .legend_show = FALSE
+    #     )
+    #   
+    # })
+    
+    # ** Forecast Plot (UK) ----
+    uk_forecast_reactive <- reactive({
       
       future_forecast_data_filtered() %>% 
-        get_forecast_data() %>%
-        plot_modeltime_forecast(
-          .title       = "",
-          .legend_show = FALSE
+        get_forecast_data(
+          .country         = "United Kingdom",
+          .forecast_days   = input$forecast_days,
+          .lookback_months = input$lookback_months
         )
       
     })
     
-    # ** Forecast Plot (UK) ----
     output$forecast_plot_uk <- renderPlotly({
       
-      future_forecast_data_filtered() %>% 
-        get_forecast_data(.country = "United Kingdom") %>%
-        plot_modeltime_forecast(
-          .title       = "",
-          .legend_show = FALSE
-        )
+      uk_forecast_reactive() %>% 
+        get_time_series_plot()
       
     })
     
     # ** Forecast Plot (All Others) ----
-    output$forecast_plot_others <- renderPlotly({
+    others_forecast_reactive <- reactive({
       
       future_forecast_data_filtered() %>% 
-        get_forecast_data(.country = "All Others") %>%
-        plot_modeltime_forecast(
-          .title       = "",
-          .legend_show = FALSE
+        get_forecast_data(
+          .country         = "All Others",
+          .forecast_days   = input$forecast_days,
+          .lookback_months = input$lookback_months
         )
+      
+    })
+    
+    output$forecast_plot_others <- renderPlotly({
+      
+      others_forecast_reactive() %>% 
+        get_time_series_plot()
       
     })
     
@@ -815,9 +832,13 @@ server <- function(input, output, session) {
     # ** Forecast Datatable ----
     output$forecast_data_dt <- renderDataTable({
       
-      future_forecast_data_filtered() %>% 
-        get_forecast_data_dt()
-    })
+      get_forecast_data_dt(
+        uk_data     = uk_forecast_reactive(),
+        others_data = others_forecast_reactive()
+      )
+      
+    }) 
+
     
     # ** Forecast Data Download ----
     output$download_forecast_data <- downloadHandler(
