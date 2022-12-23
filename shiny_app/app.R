@@ -579,7 +579,7 @@ ui <- tagList(
                 width = 12,
                 box(
                   width = 24,
-                  tags$h3("Forecast Data"),
+                  tags$h4("Forecast Data"),
                   dataTableOutput("forecast_data_dt")
                   
                 )
@@ -849,8 +849,10 @@ server <- function(input, output, session) {
       
       content = function(file){
         write.csv(
-          future_forecast_data_filtered() %>% 
-            get_forecast_data_dt(),
+          get_forecast_data_dt(
+            uk_data     = uk_forecast_reactive(),
+            others_data = others_forecast_reactive()
+          ),
           file
         )
       }
