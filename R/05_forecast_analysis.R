@@ -21,6 +21,7 @@ library(DBI)
 # ** Modeling ----
 library(tidymodels)
 library(modeltime)
+library(modeltime.resample)
 library(rules)
 
 # ** Parallel Processing ----
@@ -453,13 +454,8 @@ tuned_models_calibration_tbl <- tuned_models_tbl %>%
 
 # * Accuracy ----
 tuned_models_accuracy_tbl <- tuned_models_calibration_tbl %>% 
-    modeltime_accuracy(test_tbl)
-
-tuned_models_accuracy_tbl %>% 
-    select(-mape, -smape) %>% 
-    arrange(rmse)
-
-
+    modeltime_accuracy(test_tbl) %>% 
+    select(-mape, -smape)
 
 
 # ******************************************************************************
@@ -488,6 +484,42 @@ future_forecast_tbl %>%
     plot_modeltime_forecast(
         .facet_ncol     = 1
     )
+
+
+# ******************************************************************************
+# RESAMPLING ----
+# ******************************************************************************
+
+# * Time Series CV ----
+resamples_tscv <- train_cleaned_tbl %>% 
+    time_series_cv(
+        assess      = 90,
+        skip        = 90,
+        cumulative  = TRUE,
+        slice_limit = 4
+    )
+
+resamples_tscv %>% 
+    tk_time_series_cv_plan() %>% 
+    plot_time_series_cv_plan(invoice_date, total_quantity)
+
+# * Fitting Resamples ----
+model_tbl_tuned_resamples <- tuned_models_tbl %>% 
+    modeltime_fit_resamples(
+        resamples = resamples_tscv,
+        control   = control_resamples(verbose = TRUE, allow_par = TRUE)
+    )
+
+# * Resampling Accuracy Table ----
+model_resample_accuracy_tbl <- model_tbl_tuned_resamples %>% 
+    modeltime_resample_accuracy(
+        metric_set  = metric_set(rmse),
+        summary_fns = list(mean = mean, sd = sd)
+    ) %>% 
+    arrange(rmse_mean)
+
+    
+
 
 # ******************************************************************************
 # SAVE FORECAST ARTIFACTS ----
