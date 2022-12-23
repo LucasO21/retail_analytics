@@ -625,16 +625,19 @@ future_forecast_tbl %>%
 forecast_artifacts_list <- list(
     
     # models
-    models = list(fit_models_tbl),
+    models = list(models = ensemble_refit_tbl),
     
     # data
     data = list(
         model_fit_accuracy       = fit_models_accuracy_tbl,
         model_tune_accuracy      = tuned_models_accuracy_tbl,
         model_resamples_accuracy = model_resample_accuracy_tbl,
-        test_forecast_tbl        = test_forecast_tbl,
-        future_forecast_tbl      = future_forecast_tbl,
-        fit_models_accuracy_tbl  = fit_models_accuracy_tbl
+        model_ensemble_accuracy  = ensemble_models_accuracy_tbl,
+        test_forecast            = forecast_ensemble_test_tbl,
+        future_forecast          = future_forecast_tbl,
+        data_prepared_clean      = data_prepared_clean_tbl,
+        train_tbl                = train_tbl,
+        test_tbl                 = test_tbl
     )
     
 )
@@ -642,9 +645,9 @@ forecast_artifacts_list <- list(
 forecast_artifacts_list %>% write_rds("../artifacts/forecast_artifacts_list.rds")
 
 
-# ******************************************************************************
-# SAVE FORECAST ARTIFACTS ----
-# ******************************************************************************
+
+
+
 
 
 
