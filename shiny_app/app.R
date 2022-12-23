@@ -470,6 +470,56 @@ ui <- tagList(
           
           fluidPage(
             
+            sidebarLayout(
+              
+              # ** Side Bar Panel ----
+              sidebarPanel(
+                width = 2,
+                
+                br(),
+                
+                # *** Forecast Horizon Input ----
+                numericInput(
+                  inputId = "forecast_horizon", 
+                  label   = h5("Forecast Period (Days)"),
+                  min     = 30,
+                  max     = 90,
+                  value   = 90 
+                  ),
+                
+                # *** Look Back Months Input ----
+                numericInput(
+                  inputId = "lookback_months",
+                  label   = h5("Look Back (Months)"),
+                  min     = 3,
+                  max     = 11,
+                  value   = 11
+                ),
+                
+                br(), hr(), br(), br(), br(), br(), br(), br(), br(), br(), br(),
+                br(), br(), br(), br(), br(),
+                
+                # *** Download Data Input ----
+                downloadButton(
+                  outputId = "download_forecast_data",
+                  label    = "Download Data"
+                ),
+                
+                br(), br(),
+                
+                # *** Help Input ----
+                actionButton(
+                  inputId = "help_forecast", 
+                  label   = "Help", 
+                  icon    = icon("info"),
+                  width   = "133px" 
+                )
+                
+                
+              ),
+              mainPanel(
+              
+            
             # ** Fluid Row 1 ----
             fluidRow(
               
@@ -529,19 +579,14 @@ ui <- tagList(
                 box(
                   width = 24,
                   tags$h3("Forecast Data"),
-                  downloadButton(
-                    outputId = "download_forecast_data",
-                    label    = "Download Data"
-                  ),
-                  
-                  br(),
-                  
                   dataTableOutput("forecast_data_dt")
                   
                 )
               )
               
             )
+            )
+          )
            
           )
         ) # end Forecast tabPanel
@@ -641,7 +686,7 @@ server <- function(input, output, session) {
     # * Product Recommender Server Functions ----
     
     # ** Update Filtering Logic ----
-    observe({
+    shiny::observe({
       
       x <- customer_country_data %>% 
         filter(country %in% input$country_picker_2) %>% 
