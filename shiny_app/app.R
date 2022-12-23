@@ -124,7 +124,7 @@ future_forecast_data <- read_rds("app_artifacts/forecast_artifacts_list.rds")$da
 # ******************************************************************************
 ui <- tagList(
     useShinydashboard(),
-    useShinyjs(),
+    shinyjs::useShinyjs(),
     introjsUI(),
     # shiny::bootstrapLib(),
     tags$script(src="https://kit.fontawesome.com/77fcf700e6.js"),
@@ -525,20 +525,6 @@ ui <- tagList(
             fluidRow(
               
               # *** Column 1 ----
-              column(
-                width = 12,
-                box(
-                  width = 24,
-                  tags$h3("Forecast Information"),
-                  get_forecast_tab_info_text()
-                )               
-              )
-            ),
-            
-            # ** Fluid Row 2 ----
-            fluidRow(
-              
-              # *** Column 1 ----
               # column(
               #   width = 4,
               #   box(
@@ -774,26 +760,12 @@ server <- function(input, output, session) {
     # * Forecast Tab Server Functions ----
     
     # ** Forecast Data Filtered ----
-    future_forecast_data_filtered <- reactive({future_forecast_data})
-    
-    # # ** Forecast Plot (All) ----
-    # output$forecast_plot_all <- renderPlotly({
-    #   
-    #   future_forecast_data_filtered() %>% 
-    #     get_forecast_data(
-    #   
-    #     ) %>%
-    #     plot_modeltime_forecast(
-    #       .title       = "",
-    #       .legend_show = FALSE
-    #     )
-    #   
-    # })
+    future_forecast_filtered_data <- reactive({future_forecast_data})
     
     # ** Forecast Plot (UK) ----
-    uk_forecast_reactive <- reactive({
+    uk_forecast_reactive_data <- reactive({
       
-      future_forecast_data_filtered() %>% 
+      future_forecast_filtered_data() %>% 
         get_forecast_data(
           .country         = "United Kingdom",
           .forecast_days   = input$forecast_days,
@@ -804,15 +776,15 @@ server <- function(input, output, session) {
     
     output$forecast_plot_uk <- renderPlotly({
       
-      uk_forecast_reactive() %>% 
+      uk_forecast_reactive_data() %>% 
         get_time_series_plot()
       
     })
     
     # ** Forecast Plot (All Others) ----
-    others_forecast_reactive <- reactive({
+    others_forecast_reactive_data <- reactive({
       
-      future_forecast_data_filtered() %>% 
+      future_forecast_filtered_data() %>% 
         get_forecast_data(
           .country         = "All Others",
           .forecast_days   = input$forecast_days,
@@ -823,7 +795,7 @@ server <- function(input, output, session) {
     
     output$forecast_plot_others <- renderPlotly({
       
-      others_forecast_reactive() %>% 
+      others_forecast_reactive_data() %>% 
         get_time_series_plot()
       
     })
@@ -833,8 +805,8 @@ server <- function(input, output, session) {
     output$forecast_data_dt <- renderDataTable({
       
       get_forecast_data_dt(
-        uk_data     = uk_forecast_reactive(),
-        others_data = others_forecast_reactive()
+        uk_data     = uk_forecast_reactive_data(),
+        others_data = others_forecast_reactive_data()
       )
       
     }) 
@@ -850,13 +822,19 @@ server <- function(input, output, session) {
       content = function(file){
         write.csv(
           get_forecast_data_dt(
-            uk_data     = uk_forecast_reactive(),
-            others_data = others_forecast_reactive()
+            uk_data     = uk_forecast_reactive_data(),
+            others_data = others_forecast_reactive_data()
           ),
           file
         )
       }
     )
+    
+    # ** Help Button Reactive ----
+
+    observeEvent(input$help_forecast, {showModal(forecast_help_main_model)})
+
+    forecast_help_main_model <- get_forecast_main_help()
     
     
 

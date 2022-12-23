@@ -14,31 +14,20 @@
 # library(modeltime)
 
 # ******************************************************************************
-# DATA IMPORT ----
+# HELPER OBJECTS ----
 # ******************************************************************************
 # forecast_artifacts_list <- read_rds("app_artifacts/forecast_artifacts_list.rds")
-# 
+
 # future_forecast_tbl <- forecast_artifacts_list$data$future_forecast %>% 
 #     select(-contains("roll_"), -contains("_K1"), -contains("_lag"))
-# 
-# forecast_accuracy_tbl <- forecast_artifacts_list$data$fit_models_accuracy_tbl
-# 
+
 # future_forecast_tbl %>% glimpse()
 # future_forecast_tbl %>% distinct(.model_desc)
 # future_forecast_tbl %>% distinct(.key)
 
-custom_axis_theme <- function(){
-  
-  theme(
-    axis.text = element_text(size = 10, color = "black"),
-    axis.title = element_text(size = 9),
-    plot.title = element_text(size = 18, color = "black", face = "bold")
-  )
-}
-
 
 # ******************************************************************************
-# DATA PREP: SUMMARISE BY TIME ----
+# SUMMARISE BY TIME ----
 # ******************************************************************************
 # start_date <- as.Date("2011-01-01")
 # data       <- future_forecast_tbl
@@ -108,14 +97,9 @@ get_forecast_data <- function(data,
     
 }
 
-data <-
-  future_forecast_tbl %>%
-  get_forecast_data("United Kingdom", .forecast_days = 30, .lookback_months = 3) %>%
-  select(-text)
-
 
 # ******************************************************************************
-# PLOT TIME SERIES ----
+# TIMESERIES PLOT ----
 # ******************************************************************************
 
 get_time_series_plot <- function(data){
@@ -129,6 +113,9 @@ get_time_series_plot <- function(data){
     theme_minimal()+
     custom_axis_theme()+
     theme(
+      axis.text = element_text(size = 10, color = "black"),
+      axis.title = element_text(size = 9),
+      plot.title = element_text(size = 18, color = "black", face = "bold")
       legend.title = element_text(size = 9),
       legend.text = element_text(size = 8)
     )+
@@ -143,7 +130,6 @@ get_time_series_plot <- function(data){
   
 }
 
-# future_forecast_tbl %>% get_forecast_data() %>% get_time_series_plot()
 
 # ******************************************************************************
 # DATA PREP: DATATABLE ----
@@ -172,9 +158,9 @@ get_forecast_data_dt <- function(uk_data, others_data){
     mutate(uk_forecast_pct = ifelse(is.nan(uk_forecast_pct), 0, uk_forecast_pct)) %>% 
     mutate(others_forecast_pct = ifelse(is.nan(others_forecast_pct), 0, others_forecast_pct)) %>% 
     mutate(
-      total_forecast = total_forecast %>% scales::dollar(accuracy = 1),
-      uk_forecast = uk_forecast %>% scales::dollar(accuracy = 1),
-      others_forecast = others_forecast %>% scales::dollar(accuracy = 1),
+      total_forecast = total_forecast %>% scales::comma(accuracy = 1),
+      uk_forecast = uk_forecast %>% scales::comma(accuracy = 1),
+      others_forecast = others_forecast %>% scales::comma(accuracy = 1),
       uk_forecast_pct = uk_forecast_pct %>% scales::percent(accuracy = 0.1),
       others_forecast_pct = others_forecast_pct %>% scales::percent(accuracy = 0.1),
     ) %>% 
@@ -186,15 +172,28 @@ get_forecast_data_dt <- function(uk_data, others_data){
     
 }
 
-# get_forecast_data_dt(
-#   uk_data     = get_forecast_data(data = future_forecast_tbl, .country = "United Kingdom"),
-#   others_data = get_forecast_data(data = future_forecast_tbl, .country = "All Others") 
-#   
-# )
-
-# future_forecast_tbl %>% get_forecast_data_dt()
 
 
+# ******************************************************************************
+# HELP INITIAL ----
+# ******************************************************************************
+get_forecast_main_help <- function(){
+  
+  modalDialog(
+    title = "Forecast Information",
+    p("This tab contains a maximum daily future forecast of 90 days, split out by UK and all other countries"),
+    p("Note that UK makes up 85% of quantity sold, on average."),
+    p("The top panel of this tab shows a visual of demand trend along with future forecast."),
+    p("Us the controls on the left panel to adjust lookback months and future 
+      forecast horizon on the charts."),
+    p("For look back months, maximum is 11 months, while the minimum 3 months."),
+    p("For future forecast, the minimum is 30 days, while the maximum is 90 days."),
+    p("The buttom panel contains details details chich can be downloaded to a csv file."),
+    p(tags$a(img(src = "download_forecast.png"))),
+    size = "l", easyClose = TRUE, fade=FALSE,
+    footer = modalButton("Close (Esc)"))
+  
+}
 
   
     

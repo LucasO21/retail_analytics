@@ -5,10 +5,8 @@
 # SETUP ----
 # ******************************************************************************
 
-# Libraries ----
+# * Libraries ----
 library(shiny)
-library(plotly)
-library(DT)
 
 
 # ******************************************************************************
@@ -104,22 +102,29 @@ get_product_recommender_tab_info_text <- function(){
 # ******************************************************************************
 
 # * Forecast Tab Info Text ----
-get_forecast_tab_info_text <- function(){
+# get_forecast_tab_info_text <- function(){
+#     
+#     HTML(
+#         "
+#         <p>This tab contains info 90 day forecast (quantity). Forecast
+#         is broken out by United Kingdom and all other countries. On
+#         average per day, United Kingdom accounts for 85% of total
+#         quantity sold. The top half of the tab helps the user visualize the trailing
+#         actual quantity sold (in blue), and the 90 day future forecast (in red).
+#         The bottom half of the tab contains the forecast data which can be downloaded
+#         to a csv file.
+#         </p>
+#         "
+#         )
+#     
+#     
+# }
+
+
+
+     
+
     
-    HTML(
-        "
-        <p>This tab contains info 90 day forecast (quantity). Forecast
-        is broken out by United Kingdom and all other countries. On
-        average per day, United Kingdom accounts for 85% of total
-        quantity sold. The top half of the tab helps the user visualize the trailing
-        actual quantity sold (in blue), and the 90 day future forecast (in red).
-        The bottom half of the tab contains the forecast data which can be downloaded
-        to a csv file.
-        </p>
-        "
-        )
-    
-    
-}
+
 
 
