@@ -207,23 +207,20 @@ ui <- tagList(
           
         )
       ),
-          
-         
-          
-          
-          
-      
         
-        # * CLV Analysis Tab ----
+        # * CLV ANALYSIS TAB ----
         tabPanel(
             title = "CLV Analysis", icon = icon("hand-holding-dollar"),
             value = "tab1",
+            
             fluidPage(
                 sidebarLayout(
                     
                     # ** Sidebar Panel ----
                     sidebarPanel(
                         width = 2,
+                        
+                        br(),
                         
                         # *** Country Picker Input ----
                         pickerInput(
@@ -251,15 +248,15 @@ ui <- tagList(
                             step    = 0.05 
                         ),
                         
-                        br(),
-                        hr(),
-                        br(),
+                        br(), hr(), br(), br(), br(), br(), br(), br(), br(),
                         
                         # *** Download Button Input ----
                         downloadButton(
                             outputId = "download_clv_data",
                             label    = "Download Data"
                         )
+                        
+                        # *** Help Button Input ----
                         
                         
                         
@@ -365,7 +362,7 @@ ui <- tagList(
             )
         ), # end clv analysis tabPanel
         
-        # * Product Recommender ----
+        # * PRODUCT RECOMMENDER ----
          tabPanel(
              title = "Product Recommender", icon = icon("cart-shopping"),
              value = "tab2",
@@ -376,6 +373,8 @@ ui <- tagList(
                     # ** Sidebar Panel ----
                     sidebarPanel(
                         width = 2,
+                        
+                        br(),
 
                         # *** Country Picker Input ----
                         pickerInput(
@@ -401,16 +400,25 @@ ui <- tagList(
                             selected = NULL,
                             multiple = FALSE
                         ),
-
-                        br(),
-                        hr(),
-                        br(),
-
-                        # *** Download Product Recommender Data ----
+                        
+                        br(), hr(), br(), br(), br(), br(), br(), br(), br(),
+                        
+                        # *** Download Data Input ----
                         downloadButton(
-                            outputId = "download_pr_data",
-                            label    = "Download Data"
+                          outputId = "download_pr_data",
+                          label    = "Download Data"
+                        ),
+                        
+                        br(), br(),
+                        
+                        # *** Help Button Input ----
+                        actionButton(
+                          inputId = "help_bttn_pr", 
+                          label   = "Help", 
+                          icon    = icon("info"),
+                          width   = "133px" 
                         )
+                     
                     ),
 
                     # ** Main Panel ----
@@ -425,7 +433,7 @@ ui <- tagList(
                           width = 12,
                           box(
                             width = 24,
-                            tags$h3("Product Recommender"),
+                            tags$h4("Product Recommender"),
                             get_product_recommender_tab_info_text()
                           )               
                         )
@@ -439,7 +447,7 @@ ui <- tagList(
                           width = 12,
                           box(
                             width = 24,
-                            tags$h3("Product Recommendations"),
+                            tags$h4("Product Recommendations"),
                             textOutput("product_recommendations")
                           )
                         )
@@ -453,7 +461,7 @@ ui <- tagList(
                           width = 12,
                           box(
                             width = 24,
-                            tags$h3("Average Amount Spent by Customer on Recommended Products"),
+                            tags$h4("Average Amount Spent by Customer on Recommended Products"),
                             dataTableOutput("opportunity")
                           )
                         )
@@ -463,13 +471,12 @@ ui <- tagList(
             )
         ), # end product recommender tabPanel
         
-        # * Forecast Tab ----
+        # * FORECAST TAB ----
         tabPanel(
           title = "Forecast", icon = icon("arrow-trend-up"),
           value = "tab3",
           
           fluidPage(
-            
             sidebarLayout(
               
               # ** Side Bar Panel ----
@@ -481,23 +488,24 @@ ui <- tagList(
                 # *** Forecast Horizon Input ----
                 numericInput(
                   inputId = "forecast_days", 
-                  label   = h5("Forecast Period (Days)"),
+                  label   = h4("Forecast Period (Days)"),
                   min     = 30,
                   max     = 90,
                   value   = 90 
                   ),
                 
+                br(),
+                
                 # *** Look Back Months Input ----
                 numericInput(
                   inputId = "lookback_months",
-                  label   = h5("Look Back (Months)"),
+                  label   = h4("Look Back (Months)"),
                   min     = 3,
                   max     = 11,
                   value   = 11
                 ),
                 
-                br(), hr(), br(), br(), br(), br(), br(), br(), br(), br(), br(),
-                br(), br(), br(), br(), br(),
+                br(), hr(), br(), br(), br(), br(), br(), br(), br(),
                 
                 # *** Download Data Input ----
                 downloadButton(
@@ -507,9 +515,9 @@ ui <- tagList(
                 
                 br(), br(),
                 
-                # *** Help Input ----
+                # *** Help Button Input ----
                 actionButton(
-                  inputId = "help_forecast", 
+                  inputId = "help_bttn_forecast", 
                   label   = "Help", 
                   icon    = icon("info"),
                   width   = "133px" 
@@ -832,9 +840,11 @@ server <- function(input, output, session) {
     
     # ** Help Button Reactive ----
 
-    observeEvent(input$help_forecast, {showModal(forecast_help_main_model)})
-
-    forecast_help_main_model <- get_forecast_main_help()
+    observeEvent(input$help_bttn_forecast, {showModal(forecast_help_main_modal)})
+    forecast_help_main_modal <- get_forecast_main_help()
+    
+    observeEvent(input$help_bttn_pr, {showModal(pr_help_main_modal)})
+    pr_help_main_modal <- get_pr_main_help()
     
     
 

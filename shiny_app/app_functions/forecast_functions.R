@@ -115,7 +115,7 @@ get_time_series_plot <- function(data){
     theme(
       axis.text = element_text(size = 10, color = "black"),
       axis.title = element_text(size = 9),
-      plot.title = element_text(size = 18, color = "black", face = "bold")
+      plot.title = element_text(size = 18, color = "black", face = "bold"),
       legend.title = element_text(size = 9),
       legend.text = element_text(size = 8)
     )+

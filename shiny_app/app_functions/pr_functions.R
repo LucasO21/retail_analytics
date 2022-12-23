@@ -149,3 +149,27 @@ get_user_product_recommendations <- function(data, .sales_data,
     return(opportunity_tbl)
 
 }
+
+
+# ******************************************************************************
+# HELP INITIAL ----
+# ******************************************************************************
+get_pr_main_help <- function(){
+    
+    modalDialog(
+        title = "Product Recommendations",
+        p("This tab used user-based collaborative filtering for personalized product 
+          recommendations for each customer."),
+        p("The product recommendations are based on similarities among customers, 
+          meaning product recommendations for a particular customer are based on 
+          what other similar customers have purchased in the past."),
+        p("To learn more about collaborative filtering, visit ",
+          tags$a(href="https://en.wikipedia.org/wiki/Collaborative_filtering", 
+                 "this link",  class="externallink"),
+      size = "l", easyClose = TRUE, fade=FALSE,
+      footer = modalButton("Close (Esc)"))
+    )
+    
+}
+
+
