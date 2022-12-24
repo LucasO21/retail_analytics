@@ -3,7 +3,8 @@
 ================================================================================
 
 
-![retail_app_gif](https://user-images.githubusercontent.com/62886078/209242516-a3236afd-c8f2-418c-b71b-a77784be7ad8.gif)
+![retail_app_gif](https://user-images.githubusercontent.com/62886078/209420572-e0403ccf-6eeb-46d9-aa18-e8c6955ab962.gif)
+
 
 ### __Project Overview__
 * __Goal:__ Create a 3 part retail analytics solution for an online retailer. 
