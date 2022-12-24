@@ -3,7 +3,8 @@
 ================================================================================
 
 
-![retail_app_gif](https://user-images.githubusercontent.com/62886078/209420572-e0403ccf-6eeb-46d9-aa18-e8c6955ab962.gif)
+![retail_app_gif](https://user-images.githubusercontent.com/62886078/209420767-38d5caeb-2a4d-4963-abba-3e798ab2e66a.gif)
+
 
 
 ### __Project Overview__
