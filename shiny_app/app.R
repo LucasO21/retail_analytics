@@ -35,6 +35,8 @@ library(DT)
 
 # * Modeling ----
 library(xgboost)
+library(ranger)
+library(rules)
 library(coop)
 library(modeltime)
 
@@ -43,42 +45,6 @@ source("app_functions/ui_server_functions.R")
 source("app_functions/clv_functions.R")
 source("app_functions/pr_functions.R")
 source("app_functions/forecast_functions.R")
-
-# * App Attributes ----
-# TITLE      <- "Retail Analytics App"
-# FIRST_TAB  <- "Home"
-# SECOND_TAB <- "CLV Analysis"
-# THIRD_TAB  <- "Product Recommender"
-# FOURTH_TAB <- "Forecast"
-# 
-# FONT_HEADING <- "Montserrat"
-# FONT_BASE    <- "Open Sans"
-# PRIMARY      <- "#2C3E50"
-# SUCCESS      <- "#18BC9C"
-# INFO         <- "#A6CEE3"
-# WARNING      <- "#FDBF6F"
-# DANGER       <- "#E31A1C"
-# FG           <- PRIMARY
-# BG           <- "#FFFFFF"
-# 
-# app_theme_base <- bs_theme(
-#   font_scale   = 1.0,
-#   heading_font = font_google(FONT_HEADING, wght = c(300, 400, 500, 600, 700, 800), ital = c(0, 1)),
-#   base_font    = font_google(FONT_BASE, wght = c(300, 400, 500, 600, 700, 800), ital = c(0, 1)),
-#   primary      = PRIMARY,
-#   success      = SUCCESS,
-#   info         = INFO,
-#   warning      = WARNING,
-#   danger       = DANGER,
-#   fg           = FG,
-#   bg           = BG,
-#   "navbar-bg"  = PRIMARY,
-#   "body-color" = PRIMARY,
-#   "accordion-button-active-bg"    = "white",
-#   "accordion-button-active-color" = PRIMARY,
-#   "bs-accordion-color"            = PRIMARY,
-#   "light"                         = BG
-# )
 
 
 # ******************************************************************************
@@ -120,13 +86,12 @@ ui <- tagList(
     tags$script(src="https://kit.fontawesome.com/77fcf700e6.js"),
     
     navbarPage(
-      # theme = app_theme_base,
       theme = shinytheme("sandstone"),
       id = "tabset",
       title = "Retail Analytics App",
         
         
-        # * Home Tab ----
+        # * HOME TAB ----
         tabPanel(
           title = "Home", icon = icon("home"),
           # tags$img(
@@ -136,9 +101,7 @@ ui <- tagList(
           mainPanel(
             width = 12,
           
-          
-          
-          # Intro Box Info ----
+          # ** Intro Box Info ----
           fluidRow(
             column(
               width = 12,
@@ -150,11 +113,10 @@ ui <- tagList(
               )
             )
           ),
-        
           
           fluidRow(
             
-            # * CLV Tab Box ----
+            # ** CLV Tab Box ----
             get_box_hyperlink(
               .input_id = "home_clv_link",
               .label    = "Customer Lifetime Value Tab",
@@ -188,7 +150,7 @@ ui <- tagList(
             column(
               width = 12,
               box(
-                title = h3("Information", align = "center"),
+                title = h3("Information", align = "left"),
                 width = 24,
                 get_home_tab_info_text()
               )
@@ -261,20 +223,6 @@ ui <- tagList(
                     # ** Main Panel ----
                     mainPanel(
                         width = 10,
-                        
-                        # *** Fluid Row 1 ----
-                        # fluidRow(
-                        #   
-                        #   # **** Column 1 ----
-                        #   column(
-                        #     width = 12,
-                        #     box(
-                        #       width = 24,
-                        #       tags$h3("Product Recommender"),
-                        #       get_clv_tab_info_text()
-                        #     )               
-                        #   )
-                        # ),
                         
                         # *** Fluid Row 2 ----
                         fluidRow(
@@ -499,16 +447,6 @@ ui <- tagList(
             fluidRow(
               
               # *** Column 1 ----
-              # column(
-              #   width = 4,
-              #   box(
-              #     width = 12,
-              #     tags$h3("Forecast (Total)"),
-              #     plotlyOutput("forecast_plot_all", height = "300px")
-              #   )
-              # ),
-              
-              # *** Column 2 ----
               column(
                 width = 6,
                 box(
