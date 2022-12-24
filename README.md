@@ -40,7 +40,7 @@ For customer 15125 in the examples above, the model predicted a high probability
 of making a purchase in the next 90 days (92%). However while this customer did 
 make a purchase, the amount spent was over -$3K less than what the model predicted 
 ($733 actual vs $3216 predicted). This customer will be a prime candidate to reach 
-out to and recommend additional products to purchase (see product recommender tab) to 
+out to and recommend additional products to purchase (see product recommender tab), to 
 try and increase their future spend. In contrast, we can see analysis for customer
 17340 below.
 
@@ -62,7 +62,7 @@ prediction model by doing hyper-parameter tuning.
 
 #### __Solution 2: Product Recommendations__
 Builds on the CLV Analysis by using Collaborative Filtering to recommend products to 
-customers to customers based on what similar customers have purchased in the prior
+customers based on what similar customers have purchased in the prior
 90 days. For example we see that customer 15125 purchased $3K less than predicted. We can 
 recommend new products to this customer based on what similar customers have purchased.
 
