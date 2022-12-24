@@ -36,7 +36,7 @@ cohort of customers in terms of first purchase dates.
 
 ![](png/customer_red.png)
 
-Fore customer 15125 in the examples above, the model predicted a high probability 
+For customer 15125 in the examples above, the model predicted a high probability 
 of making a purchase in the next 90 days (92%). However while this customer did 
 make a purchase, the amount spent was over $3K less than what the model predicted 
 ($733 actual vs $3216 predicted). This customer will be a prime candidate to reach 
