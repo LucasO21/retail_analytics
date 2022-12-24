@@ -167,4 +167,75 @@ get_clv_dt <- function(data){
 }
 
 
+# ******************************************************************************
+# HELP ----
+# ******************************************************************************
+
+# * Help: Main ----
+get_clv_main_help <- function(){
+    
+    modalDialog(
+        title = "Customer Lifetime Value",
+        p("Use this tab to explore future spend amount and probability of customers."),
+        p("Using RFM (Recency Frequency Monetary features as predictors,
+          an XGBOOST model predicst the probability of a customer making a purchase,
+          in the next 90 days along with a prediction of how much they might spend."),
+        p("Click below to see examples"),
+        actionButton("clv_customer_red", "How to interpret customers in light green/red"),
+        actionButton("clv_customer_green", "How to interpret customers in dark green/black"),
+          size = "l", easyClose = TRUE, fade=FALSE,
+          footer = modalButton("Close (Esc)")
+    )
+    
+    
+}
+
+# * Help: Red Customer Example ----
+get_clv_red_help <- function(){
+    
+    modalDialog(
+        title = "Customers In Light Green/Red",
+        p("On the y-axis is spend probabilty, while on the x-axis is purchase frequency."),
+        p("Customers in light green/red have a high spend probabilty, however these customers
+          have spent much lower than predicted."),
+        br(),
+        strong("Action"),
+        p("Reach out  to these customers with product recommendations. (See Product Recommendation tab)."),
+        p(tags$a(img(src = "clv_customer_red.png", width = "60%", height = "60%"))),
+        br(),
+        size = "l", easyClose = TRUE, fade=FALSE,
+        footer = tagList(
+            actionButton("clv_customer_green", "How to interpret customers in dark green/black"),
+            actionButton("clv_help_back", "Back"),
+            modalButton("Close (Esc)")
+        )
+    )
+    
+    
+}
+
+# * Help: Green Customer Example ----
+get_clv_green_help <- function(){
+    
+    modalDialog(
+        title = "Customers In Light Dark Green/Black",
+        p("On the y-axis is spend probabilty, while on the x-axis is purchase frequency."),
+        p("Customers in dark green/black have a high spend probabilty, and are spending much lower than predicted."),
+        br(),
+        strong("Action"),
+        p("Further analyze these customers spending habits."),
+        p(tags$a(img(src = "clv_customer_green.png", width = "60%", height = "60%"))),
+        br(),
+        size = "l", easyClose = TRUE, fade=FALSE,
+        footer = tagList(
+            actionButton("clv_customer_red", "How to interpret customers in light green/red"),
+            actionButton("clv_help_back", "Back"),
+            modalButton("Close (Esc)")
+        )
+    )
+    
+    
+}
+
+
 

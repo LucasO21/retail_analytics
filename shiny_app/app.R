@@ -254,11 +254,17 @@ ui <- tagList(
                         downloadButton(
                             outputId = "download_clv_data",
                             label    = "Download Data"
-                        )
+                        ),
+                        
+                        br(), br(),
                         
                         # *** Help Button Input ----
-                        
-                        
+                        actionButton(
+                          inputId = "help_bttn_clv", 
+                          label   = "Help", 
+                          icon    = icon("info"),
+                          width   = "133px" 
+                        )
                         
                     ),
                     
@@ -267,18 +273,18 @@ ui <- tagList(
                         width = 10,
                         
                         # *** Fluid Row 1 ----
-                        fluidRow(
-                          
-                          # **** Column 1 ----
-                          column(
-                            width = 12,
-                            box(
-                              width = 24,
-                              tags$h3("Product Recommender"),
-                              get_clv_tab_info_text()
-                            )               
-                          )
-                        ),
+                        # fluidRow(
+                        #   
+                        #   # **** Column 1 ----
+                        #   column(
+                        #     width = 12,
+                        #     box(
+                        #       width = 24,
+                        #       tags$h3("Product Recommender"),
+                        #       get_clv_tab_info_text()
+                        #     )               
+                        #   )
+                        # ),
                         
                         # *** Fluid Row 2 ----
                         fluidRow(
@@ -287,14 +293,9 @@ ui <- tagList(
                             column(
                                 width = 6,
                                 box(
-                                    width = 12,
-                                    tags$fieldset(
-                                        tags$legend(
-                                            "CLV: Probability of Future Spend", 
-                                            tags$span(id = "info1", icon("info-circle"))
-                                        ),
-                                        plotlyOutput("spend_prob_p", height = "400px")
-                                    )
+                                  width = 12,
+                                  tags$h4("Probability of Future Spend"),
+                                  plotlyOutput("spend_prob_p", height = "400px")
                                 )
                             ),
                             
@@ -302,16 +303,11 @@ ui <- tagList(
                             column(
                                 width = 6,
                                 box(
-                                    width = 12,
-                                    tags$fieldset(
-                                        tags$legend(
-                                            "CLV: Key Features For Future Spend", 
-                                            tags$span(id = "info2", icon("info-circle"))
-                                        ),
-                                        plotlyOutput("features_p", height = "400px")
-                                    )
+                                  width = 12,
+                                  tags$h4("Key Features For Future Spend"),
+                                  plotlyOutput("features_p", height = "400px")
                                 )
-                            )
+                          )
                             
                         ),
                         
@@ -322,14 +318,9 @@ ui <- tagList(
                             column(
                                 width = 12,
                                 box(
-                                    width = 24,
-                                    tags$fieldset(
-                                        tags$legend(
-                                            "CLV: Features Data", 
-                                            tags$span(id = "info3", icon("info-circle"))
-                                        ),
-                                        dataTableOutput("clv_data", height = "400px")
-                                    )
+                                  width = 12,
+                                  tags$h4("Future Spend Probability & Key Features Data"),
+                                  dataTableOutput("clv_data")
                                 )
                             ) 
                         ),
@@ -426,21 +417,7 @@ ui <- tagList(
                       width = 10,
                       
                       # *** Fluid Row 1 ----
-                      fluidRow(
-                        
-                        # **** Column 1 ----
-                        column(
-                          width = 12,
-                          box(
-                            width = 24,
-                            tags$h4("Product Recommender"),
-                            get_product_recommender_tab_info_text()
-                          )               
-                        )
-                      ),
-                      
-                      # *** Fluid Row 2 ----
-                      fluidRow(
+                    fluidRow(
                         
                         # **** Column 1 ----
                         column(
@@ -523,7 +500,6 @@ ui <- tagList(
                   width   = "133px" 
                 )
                 
-                
               ),
               mainPanel(
                 width = 10,
@@ -548,7 +524,7 @@ ui <- tagList(
                 box(
                   width = 12,
                   tags$h4("Forecast (United Kingdom | 85% of Quantity Sold)"),
-                  plotlyOutput("forecast_plot_uk", height = "300px")
+                  plotlyOutput("forecast_plot_uk", height = "400px")
                 )
               ),
               
@@ -558,7 +534,7 @@ ui <- tagList(
                 box(
                   width = 12,
                   tags$h4("Forecast (All Other Countries | 15% of Quantity Sold)"),
-                  plotlyOutput("forecast_plot_others", height = "300px")
+                  plotlyOutput("forecast_plot_others", height = "400px")
             
                 )
               )
@@ -839,12 +815,38 @@ server <- function(input, output, session) {
     )
     
     # ** Help Button Reactive ----
-
-    observeEvent(input$help_bttn_forecast, {showModal(forecast_help_main_modal)})
-    forecast_help_main_modal <- get_forecast_main_help()
     
+    # *** CLV Help ----
+    
+    # **** Main Help ----
+    observeEvent(input$help_bttn_clv, {showModal(clv_help_main_modal)})
+    
+    # **** Red Customer Help ----
+    observeEvent(input$clv_customer_red, {showModal(clv_help_customer_red)})
+    
+    # **** Green Customer Help ----
+    observeEvent(input$clv_customer_green, {showModal(clv_help_customer_green)})
+    
+    # **** Call Back to Main ----
+    observeEvent(input$clv_help_back, {showModal(clv_help_main_modal)})
+    
+    # **** Main Customer Window ----
+    clv_help_main_modal <- get_clv_main_help()
+    
+    # **** Red Customer Window ----
+    clv_help_customer_red <- get_clv_red_help()
+    
+    # **** Green Customer Window ----
+    clv_help_customer_green <- get_clv_green_help()
+    
+    
+    # *** Product Recommender Help ----
     observeEvent(input$help_bttn_pr, {showModal(pr_help_main_modal)})
     pr_help_main_modal <- get_pr_main_help()
+    
+    # *** Forecast Help ----
+    observeEvent(input$help_bttn_forecast, {showModal(forecast_help_main_modal)})
+    forecast_help_main_modal <- get_forecast_main_help()
     
     
 
