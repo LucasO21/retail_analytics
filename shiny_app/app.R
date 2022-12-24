@@ -109,15 +109,6 @@ ids_for_pr_recommender <- clv_pred_data %>%
 # * Forecast Data ----
 future_forecast_data <- read_rds("app_artifacts/forecast_artifacts_list.rds")$data$future_forecast
 
-# * Theme ----
-# bs_theme_new()
-# 
-# bs_theme_add_variables(
-#   
-#   "body-pg" = "pink"
-    
-# )
-
 
 # ******************************************************************************
 # UI ----
@@ -126,7 +117,6 @@ ui <- tagList(
     useShinydashboard(),
     shinyjs::useShinyjs(),
     introjsUI(),
-    # shiny::bootstrapLib(),
     tags$script(src="https://kit.fontawesome.com/77fcf700e6.js"),
     
     navbarPage(
