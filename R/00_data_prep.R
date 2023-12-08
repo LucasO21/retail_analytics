@@ -40,14 +40,17 @@ retail_data_raw_tbl <- tbl(con, "retail_data_raw") %>%
     clean_names()
 
 retail_data_clean_tbl <- retail_data_raw_tbl %>% 
+    lazy_dt() %>% 
+    mutate(description = trimws(description, which = c("both"))) %>% 
+    mutate(invoice_date = date(invoice_date)) %>% 
     filter(!is.na(customer_id)) %>% 
     filter(quantity > 0) %>% 
     mutate(sales = quantity * price) %>% 
-    mutate(description = trimws(description, which = c("both"))) %>% 
-    mutate(description = description %>% str_replace_all("[^[:alnum:]]", "")) %>% 
     filter(!country %in% c(
         "EIRE", "Channel Islands", "RSA", "West Indies"
-    ))
+    )) %>% 
+    as_tibble() %>% 
+    distinct()
 
 # dbWriteTable(con, "retail_data_clean_tbl", retail_data_clean_tbl, overwrite = TRUE)
 
@@ -60,15 +63,17 @@ retail_data_clean_tbl <- retail_data_raw_tbl %>%
 # retail_data_clean_tbl <- tbl(con, "retail_data_clean_tbl")
 
 first_purchase_tbl <- retail_data_clean_tbl %>% 
-    mutate(date = lubridate::date(invoice_date)) %>% 
-    select(date, customer_id) %>% 
+    #filter(customer_id %in% c(12346, 12347)) %>% 
+    distinct() %>% 
+    select(invoice_date, customer_id) %>% 
     distinct() %>% 
     lazy_dt() %>% 
     group_by(customer_id) %>% 
-    slice_min(date) %>% 
+    arrange(invoice_date) %>% 
+    slice_min(invoice_date) %>% 
     ungroup() %>% 
     as_tibble() %>% 
-    mutate(quarter_start = round_date(date, "3 months")) %>% 
+    mutate(quarter_start = round_date(invoice_date, "3 months")) %>% 
     mutate(quarter_start = lubridate::ymd(quarter_start)) %>% 
     mutate(year = year(quarter_start)) %>% 
     mutate(quarter = quarter(quarter_start)) %>% 
@@ -81,12 +86,11 @@ first_purchase_tbl <- retail_data_clean_tbl %>%
             select(customer_id, country) %>% 
             distinct()
     ) %>% 
-    select(customer_id, date, quarter_start, first_purchase_cohort, country) %>% 
+    select(customer_id, invoice_date, quarter_start, first_purchase_cohort, country) %>% 
     rename(
-        first_purchase_date = date,
+        first_purchase_date = invoice_date,
         first_purchase_quarter = quarter_start
-    ) %>% 
-    mutate_if(is.Date, as.character)
+    )
 
 # dbWriteTable(con, "first_purchase_tbl", first_purchase_tbl, overwrite = TRUE)
 
