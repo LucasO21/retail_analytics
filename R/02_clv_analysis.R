@@ -41,7 +41,9 @@ con <- dbConnect(RSQLite::SQLite(), dbname = "../data/database.db")
 dbListTables(con)
 
 # * First Purchase Data ----
-first_purchase_tbl <- tbl(con, "first_purchase_tbl") %>% collect() 
+first_purchase_tbl <- tbl(con, "first_purchase_tbl") %>% 
+    collect() %>% 
+    mutate(across(first_purchase_date:first_purchase_quarter, ~ date(.)))
 
 first_purchase_tbl %>% 
     select(customer_id, first_purchase_cohort) %>% 
@@ -53,6 +55,9 @@ retail_data_clean_tbl <- tbl(con, "retail_data_clean_tbl") %>%
     collect() %>% 
     mutate(invoice_date = lubridate::date(invoice_date)) %>% 
     filter(invoice_date <= as.Date("2011-11-30"))
+
+#' Filtering retail_data_clean_tbl for invoice_date <= 2011-11-30
+#' Purchase cohorts after that date have not reached the 90 day maturity
 
 
 # ******************************************************************************
@@ -178,6 +183,17 @@ test_tbl <- training(splits_2_test) %>%
     )
     ) %>%
     mutate(spend_90_flag = as.factor(spend_90_flag))
+
+retail_data_clean_tbl %>% 
+    filter(! customer_id %in% ids_train) %>% 
+    group_by(customer_id) %>% 
+    summarise(
+        recency     = (max(invoice_date) - max_date_train) / ddays(1),
+        frequency   = n(),
+        sales_sum   = sum(sales, na.rm = TRUE),
+        sales_mean  = mean(sales, na.rm = TRUE)
+    )
+    
 
 
 # * Recipes ----
