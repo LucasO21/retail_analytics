@@ -73,8 +73,7 @@ analysis_cohort_tbl <- retail_data_clean_tbl %>%
     left_join(
         first_purchase_tbl %>% 
             select(customer_id, first_purchase_cohort) 
-    ) %>% 
-    filter(first_purchase_cohort %in% analysis_cohort)
+    ) 
 
 analysis_cohort_tbl %>% pull(invoice_date) %>% range()
 
@@ -113,9 +112,9 @@ splits_2_test <- time_series_split(
     cumulative = TRUE
 )
 
-# splits_2_train %>%
-#     tk_time_series_cv_plan() %>%
-#     plot_time_series_cv_plan(invoice_date, sales)
+splits_2_train %>%
+    tk_time_series_cv_plan() %>%
+    plot_time_series_cv_plan(invoice_date, log1p(sales), .interactive = FALSE)
 
 
 # * Make Target Data ----
@@ -237,7 +236,8 @@ predictions_test_tbl <-  bind_cols(
 ) %>%
     bind_cols(test_tbl) %>%
     select(starts_with(".pred"), starts_with("spend_"), everything()) %>% 
-    mutate(spend_actual_vs_pred = spend_90_total - .pred_total)
+    mutate(spend_actual_vs_pred = spend_90_total - .pred_total) %>% 
+    mutate(recency = abs(recency))
 
 # ** Accuracy Metrics ----
 predictions_test_tbl %>%
@@ -252,14 +252,14 @@ predictions_test_tbl %>%
 
 
 # * VIP ----
-vip(wflw_spend_prob_xgb$fit$fit)
+vip(wflw_spend_prob_xgb$fit$fit) + 
+    theme_bw() +
+    labs(title = "VIP: 90-Day Spend Total Model", y = "Features")
 
-vip(wflw_spend_total_xgb$fit$fit)
+vip(wflw_spend_total_xgb$fit$fit) +
+    theme_bw() +
+    labs(title = "VIP: 90-Day Spend Probability Model", y = "Features")
 
-
-# ******************************************************************************
-# FORMAT PREDICTIONS TABLE ----
-# ******************************************************************************
 
 # ******************************************************************************
 # CONCLUSIONS / RECOMMENDATIONS ----
@@ -279,15 +279,29 @@ vip(wflw_spend_total_xgb$fit$fit)
 #' 1 -  Which customers have the highest spend probability in the next 90 days?
 #'    - Target for new products similar to what they have purchased in the past.
 #'    - Data: sort by .pred_prob descending
-#'  
+
+predictions_test_tbl %>% 
+    arrange(desc(.pred_prob))
+
+
 #' 2 - Which customers have recently purchased but are unlikely to buy?
 #'   - Incentive actions to increase spend prob
 #'   - Provide discounts, encourage referring a friend, nurture by letting them know what's coming
 #'   - Data: filter by recency < 90 and .pred_prob < 0.2, sort by .pred_prob descending
-#'   
+
+predictions_test_tbl %>% 
+    filter(recency < 90, .pred_prob < 0.2) %>% 
+    arrange(desc(.pred_prob))
+
+   
 #' 3 - Which customers are missed opportunities
 #'   - Send bundle offers encouraging volume purchases
 #'   - Data: filter by spend_90_total == 0, sort by .pred_total descending
+
+predictions_test_tbl %>% 
+    filter(spend_90_total == 0) %>% 
+    arrange(desc(.pred_total))
+
 
 # ******************************************************************************
 # SAVE ARTIFACTS ----
