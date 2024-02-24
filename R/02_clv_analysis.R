@@ -54,7 +54,8 @@ first_purchase_tbl %>%
 retail_data_clean_tbl <- tbl(con, "retail_data_clean_tbl") %>% 
     collect() %>% 
     mutate(invoice_date = lubridate::date(invoice_date)) %>% 
-    filter(invoice_date <= as.Date("2011-11-30"))
+    filter(invoice_date <= as.Date("2011-11-30")) %>% 
+    mutate(description = gsub("\"", "", description))
 
 #' Filtering retail_data_clean_tbl for invoice_date <= 2011-11-30
 #' Purchase cohorts after that date have not reached the 90 day maturity
@@ -65,7 +66,7 @@ retail_data_clean_tbl <- tbl(con, "retail_data_clean_tbl") %>%
 # ******************************************************************************
 
 # * Pick Analysis Cohort ----
-analysis_cohort <- "Q1-2010"
+# analysis_cohort <- "Q1-2010"
 
 # * Get Analysis Cohort ----
 analysis_cohort_tbl <- retail_data_clean_tbl %>% 
@@ -260,6 +261,33 @@ vip(wflw_spend_total_xgb$fit$fit)
 # FORMAT PREDICTIONS TABLE ----
 # ******************************************************************************
 
+# ******************************************************************************
+# CONCLUSIONS / RECOMMENDATIONS ----
+# ******************************************************************************
+
+# * Conclusions: VIP ----
+#'   The most important features for predicting 90-day spend are price sum, recency.
+#'   If the goal is to get customers to spend more, then focus on the customers who
+#'   have been spending more and more recently in the last 90 days.
+#'   
+#'   Conversely the most important features for predicting 90-day spend prob are
+#'   recency and frequency. If the goal is to retain customers, then focus on increasing 
+#'   recency and frequency.
+
+
+# * Recommendations: Spend ----
+#' 1 -  Which customers have the highest spend probability in the next 90 days?
+#'    - Target for new products similar to what they have purchased in the past.
+#'    - Data: sort by .pred_prob descending
+#'  
+#' 2 - Which customers have recently purchased but are unlikely to buy?
+#'   - Incentive actions to increase spend prob
+#'   - Provide discounts, encourage referring a friend, nurture by letting them know what's coming
+#'   - Data: filter by recency < 90 and .pred_prob < 0.2, sort by .pred_prob descending
+#'   
+#' 3 - Which customers are missed opportunities
+#'   - Send bundle offers encouraging volume purchases
+#'   - Data: filter by spend_90_total == 0, sort by .pred_total descending
 
 # ******************************************************************************
 # SAVE ARTIFACTS ----
@@ -284,6 +312,8 @@ clv_artifacts_list <- list(
 )
 
 # clv_artifacts_list %>% write_rds("../artifacts/clv_artifacts_list.rds")
+
+clv_artifacts_list_saved <- read_rds("../artifacts/clv_artifacts_list.rds")
 
 
 

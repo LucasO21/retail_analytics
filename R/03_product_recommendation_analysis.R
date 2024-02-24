@@ -33,7 +33,8 @@ first_purchase_tbl <- tbl(con, "first_purchase_tbl") %>% collect()
 retail_data_clean_tbl <- tbl(con, "retail_data_clean_tbl") %>% 
     collect() %>% 
     mutate(invoice_date = lubridate::date(invoice_date)) %>% 
-    filter(invoice_date <= as.Date("2011-11-30"))
+    filter(invoice_date <= as.Date("2011-11-30")) %>% 
+    mutate(description = gsub("\"", "", description))
 
 # retail_data_clean_tbl %>% pull(invoice_date) %>% range()
 
@@ -119,7 +120,7 @@ data <- user_item_matrix
 
 get_user_to_user_cosine_matrix <- function(data){
 
-    user_to_user_matrix <- matrix <- cosine(
+    user_to_user_matrix <- cosine(
         as.matrix(
             t(data[, 2:dim(data)[2]])
         )

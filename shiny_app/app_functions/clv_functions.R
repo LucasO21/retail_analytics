@@ -6,8 +6,8 @@
 # ******************************************************************************
 
 # * Working Dir ----
-# setwd(here::here("functions"))
-# 
+# setwd(here::here("shiny_app", "app_functions"))
+ 
 # # * Libraries
 # library(tidyverse)
 # library(plotly)
@@ -16,9 +16,10 @@
 # ******************************************************************************
 # LOAD DATA ----
 # ******************************************************************************
-# clv_artifacts <- read_rds("../artifacts/clv_artifacts_list.rds")
-# 
+# clv_artifacts <- read_rds("../app_artifacts/clv_artifacts_list.rds")
+ 
 # predictions_tbl <- clv_artifacts$data$predictions_data
+# data <- predictions_tbl
 
 
 
@@ -32,6 +33,13 @@ custom_axis_theme <- function(){
         axis.title = element_text(size = 9),
         plot.title = element_text(size = 18, color = "black", face = "bold")
     )
+}
+
+
+currency_shorthand_format <- function() {
+    function(x) {
+        paste0("$", round(x / 1000, 1), "K")
+    }
 }
 
 
@@ -70,28 +78,39 @@ get_scatter_plot_data <- function(data){
 # ******************************************************************************
 # SCATTER PLOT ----
 # ******************************************************************************
+
+data <- get_scatter_plot_data(data = predictions_tbl)
+
 get_scatter_plot <- function(data){
     
     p <- data %>% 
         ggplot(aes(frequency, .pred_prob, color = spend_actual_vs_pred))+
         geom_point(aes(text = text), size = 2)+
-        geom_smooth(se = FALSE, color = "black", method = "gam")+
-        # scale_colour_gradientn(colours = c("#cc4125", "#ea9999", "#ffd966", "#6aa84f", "#274e13"))+
-        scale_color_gradient2(low = "red", mid = "#78c2ad", high = "black", midpoint = 0)+
-        labs(x = "Purchase Frequency", y = "Probability of Future 90-Day Purchase")+
+        #geom_smooth(se = FALSE, color = "black", method = "gam")+
+        #scale_colour_gradientn(colours = c("#cc4125", "#ea9999", "#ffd966", "#6aa84f", "#274e13"))+
+        scale_color_gradient2(
+            low = "red", mid = "#78c2ad", high = "black", midpoint = 0,
+            labels = currency_shorthand_format()
+        )+
         theme_minimal()+
         custom_axis_theme()+
-        theme(legend.key.size = unit(0.3, "cm"))+
-        theme(legend.title = element_text(size = 7))+
-        theme(legend.text = element_text(size = 7))
+        theme(legend.key.size = unit(1, "cm"))+
+        theme(legend.title = element_text(size = 9))+
+        theme(legend.text = element_text(size = 8)) +
+        theme(legend.position = "none")+
+        labs(
+            x = "Purchase Frequency", 
+            y = "Probability of Future 90-Day Purchase",
+            color = "Actual vs Predicted Spend"
+        )
     
-    p <- ggplotly(p, tooltip = "text") 
+    p <- ggplotly(p, tooltip = "text")
     
     return(p)
     
 }
 
-# predictions_tbl %>% get_scatter_plot_data() %>% get_scatter_plot()
+# p1 <- predictions_tbl %>% get_scatter_plot_data() %>% get_scatter_plot()
 
 
 # ******************************************************************************
@@ -99,13 +118,18 @@ get_scatter_plot <- function(data){
 # ******************************************************************************
 get_features_plot_data <- function(data){
     
-    tooltip_data <- data %>% 
-        get_tooltip_text()
+    tooltip_data <- data %>% get_tooltip_text()
 
     data_prep <- data %>%
-        select(customer_id, .pred_prob, .pred_total, spend_90_total, spend_actual_vs_pred,
-               recency, frequency, sales_sum) %>% 
-        pivot_longer(cols = -c(customer_id, .pred_prob, .pred_total, spend_90_total, spend_actual_vs_pred), names_to = "feature", values_to = "value") %>%
+        select(
+            customer_id, .pred_prob, .pred_total, spend_90_total, 
+            spend_actual_vs_pred, recency, frequency, sales_sum
+        ) %>% 
+        pivot_longer(
+            cols = -c(customer_id, .pred_prob, .pred_total, spend_90_total, spend_actual_vs_pred), 
+            names_to = "feature", 
+            values_to = "value"
+        ) %>%
         group_by(feature) %>%
         mutate(value_scaled = scale(value) %>% as.numeric()) %>%
         mutate(value_scaled = scales::rescale(value_scaled, to = c(0, 10))) %>% 
@@ -138,9 +162,11 @@ get_features_plot <- function(data){
         theme(legend.key.size = unit(0.3, "cm"))+
         theme(legend.title = element_text(size = 7))+
         theme(legend.text = element_text(size = 7))+
-        labs(x = "", y = "Scaled Feature Value")
+        labs(x = "", y = "Scaled Feature Value")+
+        theme(legend.position = "none")
 
-    p <- ggplotly(p, tooltip = "text")
+    p <- ggplotly(p, tooltip = "text") %>% 
+        layout(showlegend = FALSE)
 
     return(p)
 
