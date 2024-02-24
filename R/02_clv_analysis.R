@@ -314,7 +314,7 @@ clv_artifacts_list <- list(
     # models
     models = list(
         spend_model  = wflw_spend_total_xgb,
-        prob_model = wflw_spend_prob_xgb
+        prob_model   = wflw_spend_prob_xgb
     ),
     
     # data
