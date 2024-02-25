@@ -6,7 +6,7 @@
 # *****************************************************************************
 
 # * Set Working Dir ----
-setwd(here::here("shiny_app"))
+# setwd(here::here("shiny_app"))
 
 # * Libraries ----
 # * Core ----
@@ -52,7 +52,7 @@ first_purchase_data <- read_rds("app_data/first_purchase_data.rds")
 # * CLV Predictions Data ----
 clv_predictions_data <- read_rds("app_artifacts/clv_artifacts_list.rds")[[2]][[3]] %>%
     left_join(
-      first_purchase_tbl %>%
+      first_purchase_data %>%
         select(customer_id, first_purchase_cohort, country)
     )
 
@@ -335,13 +335,24 @@ ui <- tagList(
             ),
             
             fluidRow(
-                tableOutput("test")
+                column(
+                    width = 10, offset = 1,
+                    div(
+                      box(
+                        width = 12,
+                        solidHeader = TRUE,
+                        rounded = TRUE,
+                        h3("90-Day Spend Probability & Key Features Details", tags$span(id = "clv_data"), icon("info-circle")),
+                        DT::dataTableOutput("clv_data")
+                      )
+                    )
+                )
             )
         )
     )
 )
 
-
+  
 
 
 
@@ -351,111 +362,202 @@ ui <- tagList(
 # SERVER ----
 # *****************************************************************************
 server <- function(input, output, session) {
-    
-    # 1.0 DATA ----
-    # data <- read_rds("app_artifacts/clv_artifacts_list.rds")[[2]][[3]] %>%
-    #     left_join(
-    #         read_rds("app_data/first_purchase_data.rds") %>%
-    #             select(customer_id, first_purchase_cohort, country)
-    #     )
-    
-    # * 1.1 First Purchase Date ----
-    # first_purchase_tbl <- reactive({
-    #     read_rds("app_data/first_purchase_data.rds")
-    # })
-    # 
-    # # * 1.2 CLV Predictions Data ----
-    # clv_predictions_tbl <- reactive({
-    #     read_rds("app_artifacts/clv_artifacts_list.rds")[[2]][[3]] %>%
-    #         left_join(
-    #             first_purchase_tbl() %>%
-    #                 select(customer_id, first_purchase_cohort, country)
-    #         )
-    # })
-    
-    # data <- reactive({
-    #   data.frame(country = c("USA", "Canada", "Mexico", "Germany"))
-    # })
   
-    # clv_predictions_tbl <- reactive({
-    #     clv_predictions_data %>% 
-    #     filter(country %in% input$country_picker) %>%
-    #     filter(first_purchase_cohort %in% input$purchase_cohort) 
-    #     
-    # })
+  # 1.0 DATA -------------------------------------------------------------------
+  
+  # * 1.1 CLV Predictions Filtered (Apply Button) ----
+  clv_predictions_filtered_tbl <- eventReactive(input$apply_clv, valueExpr = {
     
+    clv_predictions_data %>% 
+      filter(country %in% input$country_picker) %>%
+      filter(first_purchase_cohort %in% input$purchase_cohort) %>%
+      filter(.pred_total >= input$id_pred_spend[1] & .pred_total <= input$id_pred_spend[2]) %>% 
+      filter(.pred_prob >= input$id_pred_prob[1] & .pred_prob <= input$id_pred_prob[2]) %>% 
+      filter(spend_90_total >= input$id_actual_spend[1] & spend_90_total <= input$id_actual_spend[2]) %>%
+      filter(spend_90_flag %in% input$id_actual_flag) %>% 
+      filter(recency >= input$recency_range[1] & recency <= input$recency_range[2]) %>%
+      filter(frequency >= input$frequency_range[1] & frequency <= input$frequency_range[2])
     
-    # 2.0 CLV TAB ----
+  }, ignoreNULL = FALSE)
+  
+  # * 1.2 First Purchase Data (Apply) ----
+  first_purchase_tbl <- eventReactive(input$apply_clv, valueExpr = {
     
-    # 2.1 Toggle Inputs ----
-    shinyjs::onclick(id = "toggle_clv_input", expr = {
-        shinyjs::toggle(id = "clv_inputs", anim = TRUE, animType = "slide")
+    first_purchase_data %>% 
+      filter(country %in% input$country_picker) %>%
+      filter(first_purchase_cohort %in% input$purchase_cohort)
+    
+  }, ignoreNULL = FALSE)
+  
+  # **** -----------------------------------------------------------------------
+  
+    
+  # 2.0 CLV TAB ----------------------------------------------------------------
+    
+  # * 2.1 Toggle Inputs ----
+  shinyjs::onclick(id = "toggle_clv_input", expr = {
+      shinyjs::toggle(id = "clv_inputs", anim = TRUE, animType = "slide")
+  })
+  
+  # * 2.2 CLV Spend/Prob Plot ----
+  output$clv_pred_plot <- renderPlotly({
+    clv_predictions_filtered_tbl() %>%
+      filter(spend_actual_vs_pred <= 1500 & spend_actual_vs_pred >= -100) %>% 
+      get_scatter_plot_data() %>%
+      get_scatter_plot()
+  })
+  
+  # * 2.3 CLV Feature Plot ----
+  output$clv_feat_plot <- renderPlotly({
+    
+    clv_predictions_filtered_tbl() %>%
+      filter(spend_actual_vs_pred <= 1500 & spend_actual_vs_pred >= -100) %>% 
+      #data %>% 
+      get_features_plot_data() %>%
+      left_join(
+        first_purchase_tbl() %>%
+          select(customer_id, country, first_purchase_cohort)
+      ) %>%
+      get_features_plot()
+  })
+  
+  # * 2.4 CLV Data Table ----
+  output$clv_data <- DT::renderDT({
+    clv_predictions_filtered_tbl() %>%
+      #data %>% 
+      select(
+        customer_id, .pred_prob, .pred_total, starts_with("spend"), 
+        recency, frequency, starts_with("sales"),
+        first_purchase_cohort, country
+      ) %>%
+      
+      # spend vs actual color flag
+      mutate(color = case_when(
+        spend_actual_vs_pred < 0                    ~ "color0",
+        spend_actual_vs_pred %>% between(0, 500)    ~ "color1",
+        spend_actual_vs_pred %>% between(501, 1000) ~ "color2",
+        TRUE                                        ~ "color3"
+      )) %>% 
+      mutate(across(ends_with("total"), ~ scales::dollar(., accuracy = 0.01))) %>%
+      mutate(across(starts_with("sales"), ~ scales::dollar(., accuracy = 0.01))) %>%
+      mutate(across(spend_actual_vs_pred, ~ scales::dollar(., accuracy = 0.01))) %>%
+      mutate(across(ends_with("prob"), ~ scales::percent(., accuracy = 0.01))) %>% 
+      setNames(names(.) %>% str_replace_all("_", " ") %>% str_to_title()) %>%
+      
+      # data table
+      datatable(
+        #rownames = FALSE,
+        options = list(
+          pageLength = 10,
+          columnDefs = list(
+            list(className = "dt-center", targets = "_all"),
+            list(visible = FALSE, targets = c(13))
+          )
+        )
+      ) %>% 
+      
+      # format color
+      formatStyle(
+        columns = "Spend Actual Vs Pred",
+        valueColumns = "Color",
+        backgroundColor = styleEqual(
+          c("color0", "color1", "color2", "color3"),
+          c("#f88379", "#78c2ad", "#68a996", "#487568")
+        )
+      )
+  })
+  
+  # * 2.5 Reset Button ----
+  observeEvent(eventExpr = input$reset_clv, handlerExpr = {
+    
+    updatePickerInput(
+      session = getDefaultReactiveDomain(),
+      inputId = "country_picker",
+      choices = sort(unique(clv_predictions_data$country)),
+      selected = sort(unique(clv_predictions_data$country))
+    )
+    
+    updatePickerInput(
+      session = getDefaultReactiveDomain(),
+      inputId = "purchase_cohort",
+      choices = sort(unique(clv_predictions_data$first_purchase_cohort)),
+      selected = sort(unique(clv_predictions_data$first_purchase_cohort))
+    )
+    
+    updateNumericRangeInput(
+      session = getDefaultReactiveDomain(),
+      inputId = "id_pred_spend",
+      value = c(
+        min(clv_predictions_data$.pred_total %>% round(0)),
+        max(clv_predictions_data$.pred_total %>% round(0))
+      )
+    )
+    
+    updateNumericRangeInput(
+      session = getDefaultReactiveDomain(),
+      inputId = "id_pred_prob",
+      value = c(
+        min(clv_predictions_data$.pred_prob %>% round(2)),
+        max(clv_predictions_data$.pred_prob %>% round(2))
+      )
+    )
+    
+    updateNumericRangeInput(
+      session = getDefaultReactiveDomain(),
+      inputId = "id_actual_spend",
+      value = c(
+        min(clv_predictions_data$spend_90_total %>% round(0)),
+        max(clv_predictions_data$spend_90_total %>% round(0))
+      )
+    )
+    
+    updatePickerInput(
+      session = getDefaultReactiveDomain(),
+      inputId = "id_actual_flag",
+      choices = unique(clv_predictions_data$spend_90_flag),
+      selected = unique(clv_predictions_data$spend_90_flag)
+    )
+    
+    updateNumericRangeInput(
+      session = getDefaultReactiveDomain(),
+      inputId = "recency_range",
+      value = c(
+        min(clv_predictions_data$recency %>% round(0)),
+        max(clv_predictions_data$recency %>% round(0))
+      )
+    )
+    
+    updateNumericRangeInput(
+      session = getDefaultReactiveDomain(),
+      inputId = "frequency_range",
+      value = c(
+        min(clv_predictions_data$frequency %>% round(0)),
+        max(clv_predictions_data$frequency %>% round(0))
+      )
+    )
+    
+    shinyjs::delay(ms = 300, expr = {
+      shinyjs::click(id = "apply_clv")
     })
+  })
+  
+  # **** -----------------------------------------------------------------------
+  
+ 
     
-    # * 2.2 Apply Button - Pred Filtered ----
-    clv_predictions_filtered_tbl <- eventReactive(input$apply_clv, valueExpr = {
-        # clv_predictions_tbl() %>%
-        #     #lazy_dt() %>%
-        #     filter(country %in% input$country_picker) %>%
-        #     filter(first_purchase_cohort %in% input$purchase_cohort) %>%
-        #     filter(.pred_total >= input$pred_total_range[1] & .pred_total <= input$pred_total_range[2]) %>%
-        #     #filter(.pred_prob >= input$pred_prob_range[1] & .pred_prob <= input$pred_prob_range[2]) %>%
-        #     filter(recency >= input$recency_range[1] & recency <= input$recency_range[2]) %>%
-        #     #filter(spend_90_flag %in% c(input$actual_prob_range[1], spend_90_flag <= input$actual_prob_range[2])) %>%
-        #     filter(recency >= input$frequency_range[1] & recency <= input$frequency_range[2]) %>%
-        #     filter(recency >= input$frequency_range[1] & recency <= input$frequency_range[2]) %>%
-        # 
-        #     #filter(.pred_prob >= input$pred_prob_range[1] & .pred_prob <= input$pred_prob_range[2]) %>%
-        #     #as_tibble()
-      clv_predictions_data %>% 
-        filter(country %in% input$country_picker) %>%
-        filter(first_purchase_cohort %in% input$purchase_cohort) %>%
-        filter(.pred_total >= input$id_pred_spend[1] & .pred_total <= input$id_pred_spend[2]) %>% 
-        filter(.pred_prob >= input$id_pred_prob[1] & .pred_prob <= input$id_pred_prob[2]) %>% 
-        filter(spend_90_total >= input$id_actual_spend[1] & spend_90_total <= input$id_actual_spend[2]) %>%
-        filter(spend_90_flag %in% input$id_actual_flag) %>% 
-        filter(recency >= input$recency_range[1] & recency <= input$recency_range[2]) %>%
-        filter(frequency >= input$frequency_range[1] & frequency <= input$frequency_range[2])
-
-
-    }, ignoreNULL = FALSE)
+  
     
-    # * 2.2 Apply Button - First Purchase Filtered ----
-    first_purchase_tbl <- eventReactive(input$apply_clv, valueExpr = {
-      first_purchase_data %>% 
-        filter(country %in% input$country_picker) %>%
-        filter(first_purchase_cohort %in% input$purchase_cohort)
-    }, ignoreNULL = FALSE)
     
-    output$test <- renderTable({
-      clv_predictions_filtered_tbl()
-    })
+  
+      
 
  
     
 
     
-    # ** CLV Spend/Prob Plot ----
-    output$clv_pred_plot <- renderPlotly({
-        clv_predictions_filtered_tbl() %>%
-        filter(spend_actual_vs_pred <= 1500 & spend_actual_vs_pred >= -100) %>% 
-            get_scatter_plot_data() %>%
-            get_scatter_plot()
-    })
-     
-    # # ** CLV Feature Plot ----
-    output$clv_feat_plot <- renderPlotly({
+   
+    
   
-        clv_predictions_filtered_tbl() %>%
-        filter(spend_actual_vs_pred <= 1500 & spend_actual_vs_pred >= -100) %>% 
-        #data %>% 
-            get_features_plot_data() %>%
-            left_join(
-                first_purchase_tbl() %>%
-                    select(customer_id, country, first_purchase_cohort)
-            ) %>%
-            get_features_plot()
-    })
     
 }
 
@@ -466,8 +568,3 @@ server <- function(input, output, session) {
 # *****************************************************************************
 shinyApp(ui, server)
 
-
-# *****************************************************************************
-# **** ----
-# SECTION NAME ----
-# *****************************************************************************
