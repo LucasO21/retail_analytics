@@ -82,26 +82,36 @@ get_scatter_plot_data <- function(data){
 #data <- get_scatter_plot_data(data = predictions_tbl)
 
 get_scatter_plot <- function(data, midpoint = 0){
+  
+  color_vec <-  c("#f88379", "#e59562", "#acb36c", "#88ab7b", "#7f9a71", "#676147", "#4d3e32", "#2b211f", "#000000")
+  
+  breaks_vec <- c(-500, -250, 0, 250, 500, 750, 1000, 1250, 1500)
     
     p <- data %>% 
-        #filter(spend_actual_vs_pred <= 1500 & spend_actual_vs_pred >= -100) %>% 
+        filter(spend_actual_vs_pred <= 2500 & spend_actual_vs_pred >= - 500) %>% 
         ggplot(aes(frequency, .pred_prob, color = spend_actual_vs_pred))+
         geom_point(aes(text = text), size = 2)+
         #geom_smooth(se = FALSE, color = "black", method = "gam")+
-        #scale_colour_gradientn(colours = c("#cc4125", "#ea9999", "#ffd966", "#6aa84f", "#274e13"))+
-        scale_color_gradient2(
-            low      = "red", 
-            mid      = "#78c2ad", 
-            high     = "black", 
-            midpoint = midpoint,
-            labels   = currency_shorthand_format()
+        scale_colour_gradientn(
+          colours = color_vec, 
+          breaks = breaks_vec,
+          labels = c("-$1K", "-$500", "-$250", "$0", "$250", "$500", "$750", "$1K", "$1.5K"),
+          #labels = currency_shorthand_format(),
+          limits = c(-500, 1500)
         )+
+        # scale_color_gradient2(
+        #     low      = "red", 
+        #     mid      = "#78c2ad", 
+        #     high     = "black", 
+        #     midpoint = midpoint,
+        #     labels   = currency_shorthand_format()
+        # )+
         theme_minimal()+
         custom_axis_theme()+
-        theme(legend.key.size = unit(1, "cm"))+
+        theme(legend.key.size = unit(0.5, "cm"))+
         theme(legend.title = element_text(size = 9))+
         theme(legend.text = element_text(size = 8)) +
-        theme(legend.position = "none")+
+        theme(legend.position = "right")+
         labs(
             x = "Purchase Frequency", 
             y = "Probability of Future 90-Day Purchase",
@@ -109,6 +119,7 @@ get_scatter_plot <- function(data, midpoint = 0){
         )
     
     p <- ggplotly(p, tooltip = "text")
+    #p
     
     return(p)
     
@@ -153,24 +164,34 @@ get_features_plot_data <- function(data){
 # FEATURES PLOT ----
 # ******************************************************************************
 get_features_plot <- function(data){
+  
+  color_vec <-  c("#f88379", "#e59562", "#acb36c", "#88ab7b", "#7f9a71", "#676147", "#4d3e32", "#2b211f", "#000000")
+  
+  breaks_vec <- c(-500, -250, 0, 250, 500, 750, 1000, 1250, 1500)
 
     p <- data %>%
+        filter(spend_actual_vs_pred <= 2500 & spend_actual_vs_pred >= - 500) %>% 
         ggplot(aes(feature, value_scaled))+
-        #geom_boxplot(col = "grey")+
         geom_jitter(aes(text = text, color = spend_actual_vs_pred), size = 2, alpha = 0.9)+
         coord_flip()+
         theme_minimal()+
         custom_axis_theme()+
+        scale_colour_gradientn(
+          colours = color_vec, 
+          breaks = breaks_vec,
+          labels = c("-$1K", "-$500", "-$250", "$0", "$250", "$500", "$750", "$1K", "$1.5K"),
+          #labels = currency_shorthand_format(),
+          limits = c(-500, 1500)
+        )+
         #scale_colour_gradientn(colours = c("#cc4125", "#ea9999", "#ffd966", "#6aa84f", "#274e13"))+
-        scale_color_gradient2(low = "red", mid = "#78c2ad", high = "black", midpoint = 0)+
-        theme(legend.key.size = unit(0.3, "cm"))+
+        #scale_color_gradient2(low = "red", mid = "#78c2ad", high = "black", midpoint = 0)+
+        theme(legend.key.size = unit(0.5, "cm"))+
         theme(legend.title = element_text(size = 7))+
         theme(legend.text = element_text(size = 7))+
-        labs(x = "", y = "Scaled Feature Value")+
-        theme(legend.position = "none")
+        labs(x = "", y = "Scaled Feature Value", color = "Actual vs Predicted Spend")+
+        theme(legend.position = "right")
 
-    p <- ggplotly(p, tooltip = "text") %>% 
-        layout(showlegend = FALSE)
+    p <- ggplotly(p, tooltip = "text") 
 
     return(p)
 
@@ -373,6 +394,7 @@ clv_picker_server <- function(id, data = reactive(NULL), feature = reactive("cou
     }
   )
 }
+
 
 
 

@@ -313,6 +313,7 @@ ui <- tagList(
                             h3("90 Day Spend Probability & Spend Total Prediction", tags$span(id = "clv_pred_dt"), icon("info-circle")),
                             plotlyOutput("clv_pred_plot")
                         ),
+                        
                         box(
                             width = 6,
                             solidHeader = TRUE,
@@ -324,15 +325,15 @@ ui <- tagList(
                 )
             ),
             
-            fluidRow(
-                column(
-                    width = 10, offset = 1,
-                    div(
-                        style = "text-align: center;",
-                        img(src = "legend.png", width = "30%")
-                    )
-                )
-            ),
+            # fluidRow(
+            #     column(
+            #         width = 10, offset = 1,
+            #         div(
+            #             style = "text-align: center;",
+            #             img(src = "legend.png", width = "30%")
+            #         )
+            #     )
+            # ),
             
             fluidRow(
                 column(
@@ -426,6 +427,7 @@ server <- function(input, output, session) {
   output$clv_data <- DT::renderDT({
     clv_predictions_filtered_tbl() %>%
       #data %>% 
+      filter(spend_actual_vs_pred <= 2500 & spend_actual_vs_pred >= - 500) %>% 
       select(
         customer_id, .pred_prob, .pred_total, starts_with("spend"), 
         recency, frequency, starts_with("sales"),
@@ -434,10 +436,14 @@ server <- function(input, output, session) {
       
       # spend vs actual color flag
       mutate(color = case_when(
-        spend_actual_vs_pred < 0                    ~ "color0",
-        spend_actual_vs_pred %>% between(0, 500)    ~ "color1",
-        spend_actual_vs_pred %>% between(501, 1000) ~ "color2",
-        TRUE                                        ~ "color3"
+        spend_actual_vs_pred %>% between(-500, -250)  ~ "color0",
+        spend_actual_vs_pred %>% between(-249, 0)     ~ "color1",
+        spend_actual_vs_pred %>% between(0, 250)      ~ "color2",
+        spend_actual_vs_pred %>% between(251, 500)    ~ "color3",
+        spend_actual_vs_pred %>% between(501, 1000)   ~ "color4",
+        spend_actual_vs_pred %>% between(1001, 1250)  ~ "color5",
+        spend_actual_vs_pred %>% between(1251, 1500)  ~ "color6",
+        TRUE                                          ~ "color7"
       )) %>% 
       mutate(across(ends_with("total"), ~ scales::dollar(., accuracy = 0.01))) %>%
       mutate(across(starts_with("sales"), ~ scales::dollar(., accuracy = 0.01))) %>%
@@ -462,11 +468,20 @@ server <- function(input, output, session) {
         columns = "Spend Actual Vs Pred",
         valueColumns = "Color",
         backgroundColor = styleEqual(
-          c("color0", "color1", "color2", "color3"),
-          c("#f88379", "#78c2ad", "#68a996", "#487568")
+          c("color0", "color1", "color2", "color3", "color4", "color5", "color6", "color7"),
+          c("#f88379", "#e59562", "#acb36c", "#88ab7b", "#7f9a71", "#676147", "#4d3e32", "#2b211f")
         )
+      ) %>% 
+      formatStyle(
+        columns = "Spend Actual Vs Pred",
+        valueColumns = "Color",
+        color = "white"
       )
   })
+  
+  # color_vec <-  c("#f88379", "#e59562", "#acb36c", "#88ab7b", "#7f9a71", "#676147", "#4d3e32", "#2b211f", "#000000")
+   
+  # breaks_vec <- c(-500, -250, 0, 250, 500, 750, 1000, 1250, 1500)
   
   # * 2.5 Reset Button ----
   observeEvent(eventExpr = input$reset_clv, handlerExpr = {
