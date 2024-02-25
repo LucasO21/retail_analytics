@@ -325,7 +325,9 @@ clv_artifacts_list <- list(
     )
 )
 
-# clv_artifacts_list %>% write_rds("../artifacts/clv_artifacts_list.rds")
+clv_artifacts_list %>% write_rds("../artifacts/clv_artifacts_list.rds")
+
+clv_artifacts_list %>% write_rds("../shiny_app/app_artifacts/clv_artifacts_list.rds")
 
 clv_artifacts_list_saved <- read_rds("../artifacts/clv_artifacts_list.rds")
 

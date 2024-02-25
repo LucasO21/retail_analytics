@@ -79,18 +79,22 @@ get_scatter_plot_data <- function(data){
 # SCATTER PLOT ----
 # ******************************************************************************
 
-data <- get_scatter_plot_data(data = predictions_tbl)
+#data <- get_scatter_plot_data(data = predictions_tbl)
 
-get_scatter_plot <- function(data){
+get_scatter_plot <- function(data, midpoint = 0){
     
     p <- data %>% 
+        #filter(spend_actual_vs_pred <= 1500 & spend_actual_vs_pred >= -100) %>% 
         ggplot(aes(frequency, .pred_prob, color = spend_actual_vs_pred))+
         geom_point(aes(text = text), size = 2)+
         #geom_smooth(se = FALSE, color = "black", method = "gam")+
         #scale_colour_gradientn(colours = c("#cc4125", "#ea9999", "#ffd966", "#6aa84f", "#274e13"))+
         scale_color_gradient2(
-            low = "red", mid = "#78c2ad", high = "black", midpoint = 0,
-            labels = currency_shorthand_format()
+            low      = "red", 
+            mid      = "#78c2ad", 
+            high     = "black", 
+            midpoint = midpoint,
+            labels   = currency_shorthand_format()
         )+
         theme_minimal()+
         custom_axis_theme()+
@@ -262,6 +266,114 @@ get_clv_green_help <- function(){
     
     
 }
+
+
+# * Numeric Range Inputs ----
+
+# feature <- "spend_90_flag"
+
+get_numeric_range_input <- function(id, data, feature, label){
+    
+    if (feature %in% c(".pred_total", "spend_90_total")) {
+        round = 0
+        step = 100
+        
+    } else if (feature == ".pred_prob") {
+        round = 2
+        step = 0.05
+    } else if (feature %in% c("recency", "frequency")) {
+        round = 0
+        step = 10
+    }
+    
+    if (feature == "spend_90_flag") {
+        widget <-   pickerInput(
+            inputId  = id,
+            label    = div(id = "plain_label", label),
+            choices  = unique(data[[feature]]),
+            selected = unique(data[[feature]]),
+            multiple = TRUE
+        )
+        #widget <- NULL
+        
+    } else {
+        
+        widget <- numericRangeInput(
+            inputId = id, 
+            label = div(id = "plain_label", label),
+            value = c(round(min(data[[feature]]), round), round(max(data[[feature]]), round)),
+            width = "120%",
+            min   = min(data[[feature]] %>% round(round)),
+            max   = max(data[[feature]] %>% round(round)),
+            step  = step
+            
+        )
+        
+    }
+    
+    return(widget)
+
+    
+}
+
+# numericRangeInput(
+#     inputId = "id_actual_spend",
+#     label   = "Actual Spend ($)",
+#     value   = c(
+#         min(clv_predictions_data$spend_90_total %>% round(0)),
+#         max(clv_predictions_data$spend_90_total %>% round(0))
+#     ),
+#     width   = "120%",
+#     min     = min(clv_predictions_data$spend_90_total %>% round(0)),
+#     max     = max(clv_predictions_data$spend_90_total %>% round(0)),
+#     step    = 100
+# )
+
+
+clv_picker_ui <- function(id, label = "Picker Label") {
+    
+  ns <- NS(id)
+  
+  tagList(
+      pickerInput(
+          inputId = ns("clv"),
+          label = h4(label),
+          choices = NULL,  # These will be set in the server part
+          selected = NULL,
+          multiple = TRUE,
+          options = list(
+              `actions-box` = TRUE,
+              `deselect-all-text` = "Deselect All",
+              `select-all-text` = "Select All",
+              `none-selected-text` = "Select Country",
+              `selected-text-format` = "count > 3",
+              liveSearch = TRUE
+          )
+      )
+  )
+}
+
+clv_picker_server <- function(id, data = reactive(NULL), feature = reactive("country")) {
+  moduleServer(
+    id,
+    function(input, output, session) {
+        
+        ns <- getDefaultReactiveDomain()$ns
+       
+        shiny::observe({
+            print(unique(data()[[feature()]]))
+            updatePickerInput(
+                session  = getDefaultReactiveDomain(),
+                inputId  = ns("clv"),
+                choices  = sort(unique(data()[[feature()]])),
+                selected = sort(unique(data()[[feature()]]))
+            )
+        })
+      
+    }
+  )
+}
+
 
 
 

@@ -14,6 +14,7 @@ library(tidyverse)
 library(janitor)
 library(lubridate)
 library(timetk)
+library(dtplyr)
 
 # * Shiny ----
 library(shiny)
@@ -42,6 +43,21 @@ source("app_functions/clv_functions.R")
 source("app_functions/pr_functions.R")
 source("app_functions/forecast_functions.R")
 
+
+# *****************************************************************************
+# DATA ----
+# *****************************************************************************
+first_purchase_data <- read_rds("app_data/first_purchase_data.rds")
+
+# * CLV Predictions Data ----
+clv_predictions_data <- read_rds("app_artifacts/clv_artifacts_list.rds")[[2]][[3]] %>%
+    left_join(
+      first_purchase_tbl %>%
+        select(customer_id, first_purchase_cohort, country)
+    )
+
+
+
 # *****************************************************************************
 # **** ----
 # UI ----
@@ -50,6 +66,7 @@ ui <- tagList(
     shinyjs::useShinyjs(),
     useShinydashboard(),
     tags$script(src="https://kit.fontawesome.com/77fcf700e6.js"),
+    tags$head(tags$style(HTML("#plain_label .control-label { font-weight: normal; }"))),
     
     navbarPage(
         id = "tabset",
@@ -132,8 +149,8 @@ ui <- tagList(
                                             pickerInput(
                                                 inputId = "country_picker",
                                                 label = h4("Select Country"),
-                                                choices = NULL,
-                                                selected = NULL,
+                                                choices = sort(unique(clv_predictions_data$country)),
+                                                selected = sort(unique(clv_predictions_data$country)),
                                                 multiple = TRUE,
                                                 options = list(
                                                     `actions-box` = TRUE,
@@ -144,6 +161,7 @@ ui <- tagList(
                                                     liveSearch = TRUE
                                                 )
                                             )
+                                            #clv_picker_ui("clv_picker_id", "Choose Countries")
                                         ),
                                         div(
                                             style = "margin-left: 10px;",
@@ -151,8 +169,8 @@ ui <- tagList(
                                             pickerInput(
                                                 inputId = "purchase_cohort",
                                                 label = h4("Select Purchase Cohort"),
-                                                choices = NULL,
-                                                selected = NULL,
+                                                choices = sort(unique(clv_predictions_data$first_purchase_cohort)),
+                                                selected = sort(unique(clv_predictions_data$first_purchase_cohort)),
                                                 multiple = TRUE,
                                                 options = list(
                                                     `actions-box` = TRUE,
@@ -163,20 +181,107 @@ ui <- tagList(
                                                     liveSearch = TRUE
                                                 )
                                             )
-                                        ),
+                                        )
+                                    ),
+                                    
+                                    hr(),
+                                    
+                                    # * Pred Spend & Prob Filter Ranges ----
+                                    div(
+                                        class = "row",
+                                        
+                                        # * Pred Spend & Prob Filter Ranges ----
                                         div(
                                             style = "margin-left: 10px;",
                                             class = "col-md-2",
-                                            sliderInput(
-                                                inputId = "sample_prop",
-                                                label   = h4("Proportion of Data Shown"),
-                                                min     = 0.1,
-                                                max     = 1,
-                                                value   = 1,
-                                                step    = 0.25
+                                            numericRangeInput(
+                                              inputId = "id_pred_spend",
+                                              label   = "Pred Spend ($)",
+                                              value   = c(
+                                                min(clv_predictions_data$.pred_total %>% round(0)),
+                                                max(clv_predictions_data$.pred_total %>% round(0))
+                                              ),
+                                              width   = "120%",
+                                              min     = min(clv_predictions_data$.pred_total %>% round(0)),
+                                              max     = max(clv_predictions_data$.pred_total %>% round(0)),
+                                              step    = 100
+
+                                            ),
+                                            
+                                            numericRangeInput(
+                                              inputId = "id_pred_prob",
+                                              label   = "Pred Prob (%)",
+                                              value   = c(
+                                                min(clv_predictions_data$.pred_prob %>% round(2)),
+                                                max(clv_predictions_data$.pred_prob %>% round(2))
+                                              ),
+                                              width   = "120%",
+                                              min     = min(clv_predictions_data$.pred_prob %>% round(2)),
+                                              max     = max(clv_predictions_data$.pred_prob %>% round(2)),
+                                              step    = 0.1
+                                            )
+                                        ),
+                              
+                                        # * Actual Spend & Prob Filter Ranges ----
+                                        div(
+                                            style = "margin-left: 10px;",
+                                            class = "col-md-2",
+                                            numericRangeInput(
+                                              inputId = "id_actual_spend",
+                                              label   = "Actual Spend ($)",
+                                              value   = c(
+                                                min(clv_predictions_data$spend_90_total %>% round(0)),
+                                                max(clv_predictions_data$spend_90_total %>% round(0))
+                                              ),
+                                              width   = "120%",
+                                              min     = min(clv_predictions_data$spend_90_total %>% round(0)),
+                                              max     = max(clv_predictions_data$spend_90_total %>% round(0)),
+                                              step    = 100
+                                            ),
+                                            
+                                            pickerInput(
+                                              inputId  = "id_actual_flag",
+                                              label    = "Actual Spend Flag",
+                                              choices  = unique(clv_predictions_data$spend_90_flag),
+                                              selected = unique(clv_predictions_data$spend_90_flag),
+                                              multiple = TRUE
+                                            )
+                                            
+                                        ),
+                                        
+                                        # * Recency & Frequency Filter Ranges ----
+                                        div(
+                                            style = "margin-left: 10px;",
+                                            class = "col-md-2",
+                                            numericRangeInput(
+                                              inputId = "recency_range",
+                                              label   = "Recency (Days)",
+                                              value   = c(
+                                                min(clv_predictions_data$recency %>% round(0)),
+                                                max(clv_predictions_data$recency %>% round(0))
+                                              ),
+                                              width   = "120%",
+                                              min     = min(clv_predictions_data$recency %>% round(0)),
+                                              max     = max(clv_predictions_data$recency %>% round(0)),
+                                              step    = 1
+                                            ),
+                                            
+                                            numericRangeInput(
+                                              inputId = "frequency_range",
+                                              label   = "Frequency",
+                                              value   = c(
+                                                min(clv_predictions_data$frequency %>% round(0)),
+                                                max(clv_predictions_data$frequency %>% round(0))
+                                              ),
+                                              width   = "120%",
+                                              min     = min(clv_predictions_data$frequency %>% round(0)),
+                                              max     = max(clv_predictions_data$frequency %>% round(0)),
+                                              step    = 1
                                             )
                                         )
                                     ),
+                                    
+                                    hr(),
                                     
                                     div(
                                         class = "row",
@@ -227,6 +332,10 @@ ui <- tagList(
                         img(src = "legend.png", width = "30%")
                     )
                 )
+            ),
+            
+            fluidRow(
+                tableOutput("test")
             )
         )
     )
@@ -243,66 +352,108 @@ ui <- tagList(
 # *****************************************************************************
 server <- function(input, output, session) {
     
-    # * DATA ----
+    # 1.0 DATA ----
+    # data <- read_rds("app_artifacts/clv_artifacts_list.rds")[[2]][[3]] %>%
+    #     left_join(
+    #         read_rds("app_data/first_purchase_data.rds") %>%
+    #             select(customer_id, first_purchase_cohort, country)
+    #     )
     
-    # ** First Purchase Date ----
-    first_purchase_tbl <- reactive({
-        read_rds("app_data/first_purchase_data.rds")
-    })
+    # * 1.1 First Purchase Date ----
+    # first_purchase_tbl <- reactive({
+    #     read_rds("app_data/first_purchase_data.rds")
+    # })
+    # 
+    # # * 1.2 CLV Predictions Data ----
+    # clv_predictions_tbl <- reactive({
+    #     read_rds("app_artifacts/clv_artifacts_list.rds")[[2]][[3]] %>%
+    #         left_join(
+    #             first_purchase_tbl() %>%
+    #                 select(customer_id, first_purchase_cohort, country)
+    #         )
+    # })
     
-    clv_predictions_tbl <- reactive({
-        read_rds("app_artifacts/clv_artifacts_list.rds")[[2]][[3]] %>% 
-            left_join(
-                first_purchase_tbl() %>% 
-                    select(customer_id, country)
-            )
-    })
+    # data <- reactive({
+    #   data.frame(country = c("USA", "Canada", "Mexico", "Germany"))
+    # })
+  
+    # clv_predictions_tbl <- reactive({
+    #     clv_predictions_data %>% 
+    #     filter(country %in% input$country_picker) %>%
+    #     filter(first_purchase_cohort %in% input$purchase_cohort) 
+    #     
+    # })
     
-    # * CLV TAB ----
     
-    # ** Toggle Inputs ----
+    # 2.0 CLV TAB ----
+    
+    # 2.1 Toggle Inputs ----
     shinyjs::onclick(id = "toggle_clv_input", expr = {
         shinyjs::toggle(id = "clv_inputs", anim = TRUE, animType = "slide")
     })
     
-    # ** Update Picker Inputs ----
-    shiny::observe({
-        updatePickerInput(
-            session = session,
-            inputId = "country_picker",
-            choices = unique(clv_predictions_tbl()$country),
-            selected = unique(clv_predictions_tbl()$country)
-        )
-        
-        updatePickerInput(
-            session = session,
-            inputId = "purchase_cohort",
-            choices = unique(first_purchase_tbl()$first_purchase_cohort),
-            selected = unique(first_purchase_tbl()$first_purchase_cohort)
-        )
+    # * 2.2 Apply Button - Pred Filtered ----
+    clv_predictions_filtered_tbl <- eventReactive(input$apply_clv, valueExpr = {
+        # clv_predictions_tbl() %>%
+        #     #lazy_dt() %>%
+        #     filter(country %in% input$country_picker) %>%
+        #     filter(first_purchase_cohort %in% input$purchase_cohort) %>%
+        #     filter(.pred_total >= input$pred_total_range[1] & .pred_total <= input$pred_total_range[2]) %>%
+        #     #filter(.pred_prob >= input$pred_prob_range[1] & .pred_prob <= input$pred_prob_range[2]) %>%
+        #     filter(recency >= input$recency_range[1] & recency <= input$recency_range[2]) %>%
+        #     #filter(spend_90_flag %in% c(input$actual_prob_range[1], spend_90_flag <= input$actual_prob_range[2])) %>%
+        #     filter(recency >= input$frequency_range[1] & recency <= input$frequency_range[2]) %>%
+        #     filter(recency >= input$frequency_range[1] & recency <= input$frequency_range[2]) %>%
+        # 
+        #     #filter(.pred_prob >= input$pred_prob_range[1] & .pred_prob <= input$pred_prob_range[2]) %>%
+        #     #as_tibble()
+      clv_predictions_data %>% 
+        filter(country %in% input$country_picker) %>%
+        filter(first_purchase_cohort %in% input$purchase_cohort) %>%
+        filter(.pred_total >= input$id_pred_spend[1] & .pred_total <= input$id_pred_spend[2]) %>% 
+        filter(.pred_prob >= input$id_pred_prob[1] & .pred_prob <= input$id_pred_prob[2]) %>% 
+        filter(spend_90_total >= input$id_actual_spend[1] & spend_90_total <= input$id_actual_spend[2]) %>%
+        filter(spend_90_flag %in% input$id_actual_flag) %>% 
+        filter(recency >= input$recency_range[1] & recency <= input$recency_range[2]) %>%
+        filter(frequency >= input$frequency_range[1] & frequency <= input$frequency_range[2])
+
+
+    }, ignoreNULL = FALSE)
+    
+    # * 2.2 Apply Button - First Purchase Filtered ----
+    first_purchase_tbl <- eventReactive(input$apply_clv, valueExpr = {
+      first_purchase_data %>% 
+        filter(country %in% input$country_picker) %>%
+        filter(first_purchase_cohort %in% input$purchase_cohort)
+    }, ignoreNULL = FALSE)
+    
+    output$test <- renderTable({
+      clv_predictions_filtered_tbl()
     })
+
+ 
+    
+
     
     # ** CLV Spend/Prob Plot ----
     output$clv_pred_plot <- renderPlotly({
-        
-        clv_predictions_tbl() %>% 
-            get_scatter_plot_data() %>% 
-            filter(country %in% input$country_picker) %>%
-            sample_frac(size = input$sample_prop) %>%
+        clv_predictions_filtered_tbl() %>%
+        filter(spend_actual_vs_pred <= 1500 & spend_actual_vs_pred >= -100) %>% 
+            get_scatter_plot_data() %>%
             get_scatter_plot()
     })
-    
-    # ** CLV Feature Plot ----
+     
+    # # ** CLV Feature Plot ----
     output$clv_feat_plot <- renderPlotly({
-        
-        clv_predictions_tbl() %>% 
+  
+        clv_predictions_filtered_tbl() %>%
+        filter(spend_actual_vs_pred <= 1500 & spend_actual_vs_pred >= -100) %>% 
+        #data %>% 
             get_features_plot_data() %>%
             left_join(
-                first_purchase_tbl() %>% 
-                    select(customer_id, country)
+                first_purchase_tbl() %>%
+                    select(customer_id, country, first_purchase_cohort)
             ) %>%
-            filter(country %in% input$country_picker) %>%
-            sample_frac(size = input$sample_prop) %>%
             get_features_plot()
     })
     
