@@ -369,6 +369,7 @@ server <- function(input, output, session) {
   clv_predictions_filtered_tbl <- eventReactive(input$apply_clv, valueExpr = {
     
     clv_predictions_data %>% 
+      filter(spend_actual_vs_pred <= 1500 & spend_actual_vs_pred >= -100) %>% 
       filter(country %in% input$country_picker) %>%
       filter(first_purchase_cohort %in% input$purchase_cohort) %>%
       filter(.pred_total >= input$id_pred_spend[1] & .pred_total <= input$id_pred_spend[2]) %>% 
@@ -539,7 +540,37 @@ server <- function(input, output, session) {
     shinyjs::delay(ms = 300, expr = {
       shinyjs::click(id = "apply_clv")
     })
+    
   })
+  
+  # * 2.6 CLV Help ----
+  
+  # ** Main Help Button ----
+  observeEvent(input$help_clv, {showModal(clv_help_main_modal)})
+  
+  # ** Customer Red Help ----
+  observeEvent(input$clv_customer_red, {showModal(clv_help_customer_red)})
+  
+  # ** Customer Green Help ----
+  observeEvent(input$clv_customer_green, {showModal(clv_help_customer_green)})
+  
+  # ** Call Back to Main ----
+  observeEvent(input$clv_help_back, {showModal(clv_help_main_modal)})
+  
+  # ** Main Customer Window ----
+  clv_help_main_modal <- get_clv_main_help()
+  
+  # ** Red Customer Window ----
+  clv_help_customer_red <- get_clv_red_help()
+  
+  # ** Green Customer Window ----
+  clv_help_customer_green <- get_clv_green_help()
+  
+  
+  
+  
+  
+
   
   # **** -----------------------------------------------------------------------
   
