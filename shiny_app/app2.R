@@ -67,6 +67,10 @@ ui <- tagList(
     useShinydashboard(),
     tags$script(src="https://kit.fontawesome.com/77fcf700e6.js"),
     tags$head(tags$style(HTML("#plain_label .control-label { font-weight: normal; }"))),
+    tags$head(tags$style(HTML(".box.box-info > .box-header {background-color: ##ecf0f1 !important;}"))),
+    tags$head(tags$style(HTML(".box {border-color: #ecf0f1 !important;}"))),
+    includeCSS("www/styles.css"),
+    
     
     navbarPage(
         id = "tabset",
@@ -310,6 +314,7 @@ ui <- tagList(
                             width = 6,
                             solidHeader = TRUE,
                             rounded = TRUE,
+                            status = "info",
                             h3("90 Day Spend Probability & Spend Total Prediction", tags$span(id = "clv_pred_dt"), icon("info-circle")),
                             plotlyOutput("clv_pred_plot")
                         ),
@@ -318,6 +323,7 @@ ui <- tagList(
                             width = 6,
                             solidHeader = TRUE,
                             rounded = TRUE,
+                            status = "info",
                             h3("90 Day Spend Prob & Total Prediction (Key Features)", tags$span(id = "clv_feat_dt"), icon("info-circle")),
                             plotlyOutput("clv_feat_plot")
                         )
@@ -343,6 +349,7 @@ ui <- tagList(
                         width = 12,
                         solidHeader = TRUE,
                         rounded = TRUE,
+                        status = "info",
                         h3("90-Day Spend Probability & Key Features Details", tags$span(id = "clv_data"), icon("info-circle")),
                         DT::dataTableOutput("clv_data")
                       )
@@ -370,7 +377,7 @@ server <- function(input, output, session) {
   clv_predictions_filtered_tbl <- eventReactive(input$apply_clv, valueExpr = {
     
     clv_predictions_data %>% 
-      filter(spend_actual_vs_pred <= 1500 & spend_actual_vs_pred >= -100) %>% 
+      filter(spend_actual_vs_pred <= 2500 & spend_actual_vs_pred >= -500) %>% 
       filter(country %in% input$country_picker) %>%
       filter(first_purchase_cohort %in% input$purchase_cohort) %>%
       filter(.pred_total >= input$id_pred_spend[1] & .pred_total <= input$id_pred_spend[2]) %>% 

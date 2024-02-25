@@ -88,7 +88,7 @@ get_scatter_plot <- function(data, midpoint = 0){
   breaks_vec <- c(-500, -250, 0, 250, 500, 750, 1000, 1250, 1500)
     
     p <- data %>% 
-        filter(spend_actual_vs_pred <= 2500 & spend_actual_vs_pred >= - 500) %>% 
+        #filter(spend_actual_vs_pred <= 2500 & spend_actual_vs_pred >= - 500) %>% 
         ggplot(aes(frequency, .pred_prob, color = spend_actual_vs_pred))+
         geom_point(aes(text = text), size = 2)+
         #geom_smooth(se = FALSE, color = "black", method = "gam")+
@@ -119,7 +119,7 @@ get_scatter_plot <- function(data, midpoint = 0){
         )
     
     p <- ggplotly(p, tooltip = "text")
-    #p
+    p
     
     return(p)
     
@@ -170,7 +170,7 @@ get_features_plot <- function(data){
   breaks_vec <- c(-500, -250, 0, 250, 500, 750, 1000, 1250, 1500)
 
     p <- data %>%
-        filter(spend_actual_vs_pred <= 2500 & spend_actual_vs_pred >= - 500) %>% 
+        #filter(spend_actual_vs_pred <= 2500 & spend_actual_vs_pred >= - 500) %>% 
         ggplot(aes(feature, value_scaled))+
         geom_jitter(aes(text = text, color = spend_actual_vs_pred), size = 2, alpha = 0.9)+
         coord_flip()+
