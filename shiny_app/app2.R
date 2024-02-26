@@ -71,13 +71,13 @@ ui <- tagList(
     tags$head(tags$style(HTML(".box {border-color: #ecf0f1 !important;}"))),
     includeCSS("www/styles.css"),
     
-    
+    # 1.0 NAVBAR ----
     navbarPage(
         id = "tabset",
         title = "Retail Analytics App",
         
         
-        # * Home Tab ----
+        # * 1.1 Home Tab ----
         tabPanel(
             title = "Home", icon = icon("home"),
             fluidRow(
@@ -113,12 +113,12 @@ ui <- tagList(
         ),
         
         
-        # * CLV TAB ----
+        # 2.0 CLV TAB ----
         tabPanel(
             title = "CLV Analysis", icon = icon("hand-holding-dollar"),
             value = "clv_tab",
             
-            # ** Header ----
+            # ** 2.1 Tab Header ----
             fluidRow(
                 column(
                     width = 10, offset = 1,
@@ -130,7 +130,7 @@ ui <- tagList(
                 )
             ),
             
-            # ** Input Panel ----
+            # ** 2.2 Well Panel Inputs ----
             fluidRow(
                 column(
                     width = 10, offset = 1,
@@ -147,6 +147,8 @@ ui <- tagList(
                                     id = "clv_inputs",
                                     div(
                                         class = "row",
+                                        
+                                        # *** 2.2.1 Country Picker ----
                                         div(
                                             style = "margin-left: 10px;",
                                             class = "col-md-2",
@@ -167,6 +169,8 @@ ui <- tagList(
                                             )
                                             #clv_picker_ui("clv_picker_id", "Choose Countries")
                                         ),
+                                        
+                                        # *** 2.2.2 Purchase Cohort Picker ----
                                         div(
                                             style = "margin-left: 10px;",
                                             class = "col-md-2",
@@ -190,11 +194,11 @@ ui <- tagList(
                                     
                                     hr(),
                                     
-                                    # * Pred Spend & Prob Filter Ranges ----
+                                    # * 2.3 Pred Spend/Prob Filter Range Div ----
                                     div(
                                         class = "row",
                                         
-                                        # * Pred Spend & Prob Filter Ranges ----
+                                        # ** 2.3.1 Pred Spend Filter Ranges ----
                                         div(
                                             style = "margin-left: 10px;",
                                             class = "col-md-2",
@@ -212,6 +216,7 @@ ui <- tagList(
 
                                             ),
                                             
+                                            # ** 2.3.2 Pred Prob Filter Ranges ----
                                             numericRangeInput(
                                               inputId = "id_pred_prob",
                                               label   = "Pred Prob (%)",
@@ -226,10 +231,12 @@ ui <- tagList(
                                             )
                                         ),
                               
-                                        # * Actual Spend & Prob Filter Ranges ----
+                                        # * 2.4 Actual Spend/Prob Filter Range Div ----
                                         div(
                                             style = "margin-left: 10px;",
                                             class = "col-md-2",
+                                            
+                                            # ** 2.4.1 Actual Spend Filter Ranges ----
                                             numericRangeInput(
                                               inputId = "id_actual_spend",
                                               label   = "Actual Spend ($)",
@@ -243,6 +250,7 @@ ui <- tagList(
                                               step    = 100
                                             ),
                                             
+                                            # ** 2.4.2 Actual Spend Flag Filter ----
                                             pickerInput(
                                               inputId  = "id_actual_flag",
                                               label    = "Actual Spend Flag",
@@ -253,10 +261,12 @@ ui <- tagList(
                                             
                                         ),
                                         
-                                        # * Recency & Frequency Filter Ranges ----
+                                        # * 2.5 Recency & Frequency Filter Range Div ----
                                         div(
                                             style = "margin-left: 10px;",
                                             class = "col-md-2",
+                                            
+                                            # ** 2.5.1 Recency Filter Range ----
                                             numericRangeInput(
                                               inputId = "recency_range",
                                               label   = "Recency (Days)",
@@ -269,6 +279,7 @@ ui <- tagList(
                                               max     = max(clv_predictions_data$recency %>% round(0)),
                                               step    = 1
                                             ),
+                                            
                                             
                                             numericRangeInput(
                                               inputId = "frequency_range",
@@ -287,13 +298,13 @@ ui <- tagList(
                                     
                                     hr(),
                                     
+                                    # * 2.6 Action Buttons ----
                                     div(
                                         class = "row",
                                         div(
                                             style = "margin-left: 20px;",
                                             actionButton("apply_clv", "Apply", icon = icon("play"), width = "140px"),
                                             actionButton("reset_clv", "Reset", icon = icon("redo"), width = "140px"),
-                                            #actionButton("download_clv", "Download", icon = icon("download"), width = "140px"),
                                             downloadButton("download_clv", "Download", icon = icon("download"), width = "140px"),
                                             actionButton("help_clv", "Help", icon = icon("question"), width = "140px")
                                         )
@@ -306,7 +317,7 @@ ui <- tagList(
             ),
             br(),
             
-            # ** Output Panel ----
+            # * 2.7 Scatter Plots fluidRow ----
             fluidRow(
                 column(
                     width = 10, offset = 1,
@@ -342,6 +353,7 @@ ui <- tagList(
             #     )
             # ),
             
+            # * 2.8 Data Table fluidRow ----
             fluidRow(
                 column(
                     width = 10, offset = 1,
