@@ -293,7 +293,8 @@ ui <- tagList(
                                             style = "margin-left: 20px;",
                                             actionButton("apply_clv", "Apply", icon = icon("play"), width = "140px"),
                                             actionButton("reset_clv", "Reset", icon = icon("redo"), width = "140px"),
-                                            actionButton("download_clv", "Download", icon = icon("download"), width = "140px"),
+                                            #actionButton("download_clv", "Download", icon = icon("download"), width = "140px"),
+                                            downloadButton("download_clv", "Download", icon = icon("download"), width = "140px"),
                                             actionButton("help_clv", "Help", icon = icon("question"), width = "140px")
                                         )
                                     )
@@ -356,6 +357,16 @@ ui <- tagList(
                     )
                 )
             )
+            
+            # Module Test
+            # fluidRow(
+            #     column(
+            #         width = 10, offset = 1,
+            #         div(
+            #             clv_picker_ui("country_picker", "Choose Countries")
+            #         )
+            #     )
+            # )
         )
     )
 )
@@ -398,6 +409,14 @@ server <- function(input, output, session) {
     
   }, ignoreNULL = FALSE)
   
+  df <- reactive({
+    data.frame(country = c("USA", "Canada", "Mexico", "Germany", "France")) %>% as_tibb
+  })
+  
+  # Module Test
+  #clv_picker_server("country_picker", clv_predictions_filtered_tbl, reactive("country"))
+  
+  
   # **** -----------------------------------------------------------------------
   
     
@@ -433,57 +452,61 @@ server <- function(input, output, session) {
   # * 2.4 CLV Data Table ----
   output$clv_data <- DT::renderDT({
     clv_predictions_filtered_tbl() %>%
+      
       #data %>% 
-      filter(spend_actual_vs_pred <= 2500 & spend_actual_vs_pred >= - 500) %>% 
-      select(
-        customer_id, .pred_prob, .pred_total, starts_with("spend"), 
-        recency, frequency, starts_with("sales"),
-        first_purchase_cohort, country
-      ) %>%
+      # filter(spend_actual_vs_pred <= 2500 & spend_actual_vs_pred >= - 500) %>% 
+      # select(
+      #   customer_id, .pred_prob, .pred_total, starts_with("spend"), 
+      #   recency, frequency, starts_with("sales"),
+      #   first_purchase_cohort, country
+      # ) %>%
+      # 
+      # # spend vs actual color flag
+      # mutate(color = case_when(
+      #   spend_actual_vs_pred %>% between(-500, -250)  ~ "color0",
+      #   spend_actual_vs_pred %>% between(-249, 0)     ~ "color1",
+      #   spend_actual_vs_pred %>% between(0, 250)      ~ "color2",
+      #   spend_actual_vs_pred %>% between(251, 500)    ~ "color3",
+      #   spend_actual_vs_pred %>% between(501, 1000)   ~ "color4",
+      #   spend_actual_vs_pred %>% between(1001, 1250)  ~ "color5",
+      #   spend_actual_vs_pred %>% between(1251, 1500)  ~ "color6",
+      #   TRUE                                          ~ "color7"
+      # )) %>% 
+      # mutate(across(ends_with("total"), ~ scales::dollar(., accuracy = 0.01))) %>%
+      # mutate(across(starts_with("sales"), ~ scales::dollar(., accuracy = 0.01))) %>%
+      # mutate(across(spend_actual_vs_pred, ~ scales::dollar(., accuracy = 0.01))) %>%
+      # mutate(across(ends_with("prob"), ~ scales::percent(., accuracy = 0.01))) %>% 
+      # setNames(names(.) %>% str_replace_all("_", " ") %>% str_to_title()) %>%
+      get_clv_predictions_dt_data() %>% 
+      get_dt_table(clv_format = TRUE)
+    
       
-      # spend vs actual color flag
-      mutate(color = case_when(
-        spend_actual_vs_pred %>% between(-500, -250)  ~ "color0",
-        spend_actual_vs_pred %>% between(-249, 0)     ~ "color1",
-        spend_actual_vs_pred %>% between(0, 250)      ~ "color2",
-        spend_actual_vs_pred %>% between(251, 500)    ~ "color3",
-        spend_actual_vs_pred %>% between(501, 1000)   ~ "color4",
-        spend_actual_vs_pred %>% between(1001, 1250)  ~ "color5",
-        spend_actual_vs_pred %>% between(1251, 1500)  ~ "color6",
-        TRUE                                          ~ "color7"
-      )) %>% 
-      mutate(across(ends_with("total"), ~ scales::dollar(., accuracy = 0.01))) %>%
-      mutate(across(starts_with("sales"), ~ scales::dollar(., accuracy = 0.01))) %>%
-      mutate(across(spend_actual_vs_pred, ~ scales::dollar(., accuracy = 0.01))) %>%
-      mutate(across(ends_with("prob"), ~ scales::percent(., accuracy = 0.01))) %>% 
-      setNames(names(.) %>% str_replace_all("_", " ") %>% str_to_title()) %>%
-      
-      # data table
-      datatable(
-        #rownames = FALSE,
-        options = list(
-          pageLength = 10,
-          columnDefs = list(
-            list(className = "dt-center", targets = "_all"),
-            list(visible = FALSE, targets = c(13))
-          )
-        )
-      ) %>% 
-      
-      # format color
-      formatStyle(
-        columns = "Spend Actual Vs Pred",
-        valueColumns = "Color",
-        backgroundColor = styleEqual(
-          c("color0", "color1", "color2", "color3", "color4", "color5", "color6", "color7"),
-          c("#f88379", "#e59562", "#acb36c", "#88ab7b", "#7f9a71", "#676147", "#4d3e32", "#2b211f")
-        )
-      ) %>% 
-      formatStyle(
-        columns = "Spend Actual Vs Pred",
-        valueColumns = "Color",
-        color = "white"
-      )
+      # # data table
+      # datatable(
+      #   #rownames = FALSE,
+      #   options = list(
+      #     pageLength = 10,
+      #     columnDefs = list(
+      #       list(className = "dt-center", targets = "_all"),
+      #       list(visible = FALSE, targets = c(13))
+      #     )
+      #   )
+      # ) %>% 
+      # 
+      # # format color
+      # formatStyle(
+      #   columns = "Spend Actual Vs Pred",
+      #   valueColumns = "Color",
+      #   backgroundColor = styleEqual(
+      #     c("color0", "color1", "color2", "color3", "color4", "color5", "color6", "color7"),
+      #     c("#f88379", "#e59562", "#acb36c", "#88ab7b", "#7f9a71", "#676147", "#4d3e32", "#2b211f")
+      #   )
+      # ) %>% 
+      # formatStyle(
+      #   columns = "Spend Actual Vs Pred",
+      #   valueColumns = "Color",
+      #   color = "white"
+      # )
   })
   
   # color_vec <-  c("#f88379", "#e59562", "#acb36c", "#88ab7b", "#7f9a71", "#676147", "#4d3e32", "#2b211f", "#000000")
@@ -567,26 +590,44 @@ server <- function(input, output, session) {
   
   # * 2.6 CLV Help ----
   
-  # ** Main Help Button ----
+  # ** 2.6.1 Main Help Button ----
   observeEvent(input$help_clv, {showModal(clv_help_main_modal)})
   
-  # ** Customer Red Help ----
+  # ** 2.6.2 Customer Red Help ----
   observeEvent(input$clv_customer_red, {showModal(clv_help_customer_red)})
   
-  # ** Customer Green Help ----
+  # ** 2.6.3 Customer Green Help ----
   observeEvent(input$clv_customer_green, {showModal(clv_help_customer_green)})
   
-  # ** Call Back to Main ----
+  # ** 2.6.4 Call Back to Main ----
   observeEvent(input$clv_help_back, {showModal(clv_help_main_modal)})
   
-  # ** Main Customer Window ----
+  # ** 2.6.5 Main Customer Window ----
   clv_help_main_modal <- get_clv_main_help()
   
-  # ** Red Customer Window ----
+  # ** 2.6.6 Red Customer Window ----
   clv_help_customer_red <- get_clv_red_help()
   
-  # ** Green Customer Window ----
+  # ** 2.6.7 Green Customer Window ----
   clv_help_customer_green <- get_clv_green_help()
+  
+  # 2.7 CLV Download ----
+  output$download_clv <- downloadHandler(
+    
+    filename = function(){
+      paste("clv_predictions_data", Sys.Date(), "csv", sep = ".")
+    },
+    
+    content = function(file){
+      write.csv(
+        clv_predictions_filtered_tbl() %>% 
+          get_clv_predictions_dt_data() %>%
+          mutate_if(is.numeric, as.character) %>% 
+          mutate_if(is.factor, as.character),
+        file
+      )
+    }
+  )
   
   
   

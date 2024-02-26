@@ -356,37 +356,43 @@ clv_picker_ui <- function(id, label = "Picker Label") {
   ns <- NS(id)
   
   tagList(
-      pickerInput(
-          inputId = ns("clv"),
-          label = h4(label),
-          choices = NULL,  # These will be set in the server part
+    shinyWidgets::pickerInput(
+          inputId  = ns("clv"),
+          label    = h4(label),
+          choices  = NULL,  # These will be set in the server part
           selected = NULL,
           multiple = TRUE,
-          options = list(
-              `actions-box` = TRUE,
-              `deselect-all-text` = "Deselect All",
-              `select-all-text` = "Select All",
-              `none-selected-text` = "Select Country",
+          options  = list(
+              `actions-box`          = TRUE,
+              `deselect-all-text`    = "Deselect All",
+              `select-all-text`      = "Select All",
+              `none-selected-text`   = "Select Country",
               `selected-text-format` = "count > 3",
-              liveSearch = TRUE
+              liveSearch             = TRUE
           )
       )
   )
 }
 
-clv_picker_server <- function(id, data = reactive(NULL), feature = reactive("country")) {
-  moduleServer(
-    id,
-    function(input, output, session) {
+clv_picker_server <- function(id, data = reactive(NULL), feature = reactive()) {
+  
+  moduleServer(id, function(input, output, session) {
         
         ns <- getDefaultReactiveDomain()$ns
        
         shiny::observe({
-            print(unique(data()[[feature()]]))
-            updatePickerInput(
+          
+          # error handling
+          if (is.null(data()) || is.null(data()[[feature()]])) {
+            return()
+          }
+          
+            print( sort(unique(data()[[feature()]])) )
+            
+            shinyWidgets::updatePickerInput(
                 session  = getDefaultReactiveDomain(),
                 inputId  = ns("clv"),
-                choices  = sort(unique(data()[[feature()]])),
+                choices  = sort(unique(data()[[feature()]])), 
                 selected = sort(unique(data()[[feature()]]))
             )
         })
@@ -396,6 +402,76 @@ clv_picker_server <- function(id, data = reactive(NULL), feature = reactive("cou
 }
 
 
+# * CLV Prediction Data Prep ----
+get_clv_predictions_dt_data <- function(data){
+    
+  data_prep <- data %>% 
+    filter(spend_actual_vs_pred <= 2500 & spend_actual_vs_pred >= - 500) %>% 
+      select(
+        customer_id, .pred_prob, .pred_total, starts_with("spend"), 
+        recency, frequency, starts_with("sales"),
+        first_purchase_cohort, country
+      ) %>%
+      
+      # spend vs actual color flag
+      mutate(color = case_when(
+        spend_actual_vs_pred %>% between(-500, -250)  ~ "color0",
+        spend_actual_vs_pred %>% between(-249, 0)     ~ "color1",
+        spend_actual_vs_pred %>% between(0, 250)      ~ "color2",
+        spend_actual_vs_pred %>% between(251, 500)    ~ "color3",
+        spend_actual_vs_pred %>% between(501, 1000)   ~ "color4",
+        spend_actual_vs_pred %>% between(1001, 1250)  ~ "color5",
+        spend_actual_vs_pred %>% between(1251, 1500)  ~ "color6",
+        TRUE                                          ~ "color7"
+      )) %>% 
+      mutate(across(ends_with("total"), ~ scales::dollar(., accuracy = 0.01))) %>%
+      mutate(across(starts_with("sales"), ~ scales::dollar(., accuracy = 0.01))) %>%
+      mutate(across(spend_actual_vs_pred, ~ scales::dollar(., accuracy = 0.01))) %>%
+      mutate(across(ends_with("prob"), ~ scales::percent(., accuracy = 0.01))) %>% 
+      setNames(names(.) %>% str_replace_all("_", " ") %>% str_to_title())
+  
+  return(data_prep)
+    
+}
+
+# * DT Table ----
+get_dt_table <- function(data, align_center_cols = "_all", invisible_cols = NULL,
+                         clv_format = TRUE) {
+  
+  dt <- data %>%
+    datatable(
+      #rownames = FALSE,
+      options = list(
+        pageLength = 10,
+        columnDefs = list(
+          list(className = "dt-center", targets = align_center_cols),
+          list(visible = FALSE, targets = invisible_cols)
+        )
+      )
+    )
+  
+  if (clv_format) {
+      # format color
+    
+    dt <- dt %>% 
+      formatStyle(
+        columns = "Spend Actual Vs Pred",
+        valueColumns = "Color",
+        backgroundColor = styleEqual(
+          c("color0", "color1", "color2", "color3", "color4", "color5", "color6", "color7"),
+          c("#f88379", "#e59562", "#acb36c", "#88ab7b", "#7f9a71", "#676147", "#4d3e32", "#2b211f")
+        )
+      ) %>% 
+      formatStyle(
+        columns = "Spend Actual Vs Pred",
+        valueColumns = "Color",
+        color = "white"
+      ) 
+  } 
+  
+  # return
+  return(dt)
+}
 
 
 
