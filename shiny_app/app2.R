@@ -125,7 +125,7 @@ ui <- tagList(
                     div(
                         class = "page-header",
                         h1("Customer Lifetime Value Analysis"),
-                        h4("Analyze the next 90 day spend probability and spend total prediction.")
+                        h4("Analyze Predicted Next 90 Day Spend Probability and Spend Total.")
                     )
                 )
             ),
@@ -379,6 +379,127 @@ ui <- tagList(
             #         )
             #     )
             # )
+        ),
+        
+        # * 3.0 PRODUCT RECOMMENDATINOS TAB ----
+        tabPanel(
+          title = "Product Recommender", icon = icon("cart-shopping"),
+          value = "pr_tab",
+          
+          # ** 2.1 Tab Header ----
+          fluidRow(
+            column(
+              width = 10, offset = 1,
+              div(
+                class = "page-header",
+                h1("Product Recommendations"),
+                h4("Personalized Recommedation Engine for Customers.")
+              )
+            )
+          )
+        ),
+        
+        # ** 3.1 Well Panel Inputs ----
+        fluidRow(
+          column(
+            width = 10, offset = 1,
+            div(
+              wellPanel(
+                fluidRow(
+                  div(
+                    style = "margin-left: 10px;",
+                    actionButton("toggle_input_pr", "Toggle Inputs", icon("caret-down"))
+                  ), 
+                  br(),
+                  
+                  div(
+                    id = "pr_inputs",
+                    div(
+                      class = "row",
+                      
+                      # *** 3.1.1 Country Picker ----
+                      div(
+                        style = "margin-left: 10px;",
+                        class = "col-md-2",
+                        pickerInput(
+                          inputId = "pr_country_picker",
+                          label = h4("Select Country"),
+                          choices = sort(unique(clv_predictions_data$country)),
+                          selected = sort(unique(clv_predictions_data$country)),
+                          multiple = TRUE,
+                          options = list(
+                            `actions-box` = TRUE,
+                            `deselct-all-text` = "Deselect All",
+                            `select-all-text` = "Select All",
+                            `none-selected-text` = "Select Country",
+                            `selected-text-format` = "count > 3",
+                            liveSearch = TRUE
+                          )
+                        )
+                        #clv_picker_ui("clv_picker_id", "Choose Countries")
+                      ),
+                      
+                      # *** 3.1.2 Purchase Cohort Picker ----
+                      div(
+                        style = "margin-left: 10px;",
+                        class = "col-md-2",
+                        pickerInput(
+                          inputId = "pr_purchase_cohort",
+                          label = h4("Select Purchase Cohort"),
+                          choices = sort(unique(clv_predictions_data$first_purchase_cohort)),
+                          selected = sort(unique(clv_predictions_data$first_purchase_cohort)),
+                          multiple = TRUE,
+                          options = list(
+                            `actions-box` = TRUE,
+                            `deselct-all-text` = "Deselect All",
+                            `select-all-text` = "Select All",
+                            `none-selected-text` = "Select Purchase Cohort",
+                            `selected-text-format` = "count > 3",
+                            liveSearch = TRUE
+                          )
+                        )
+                      ),
+                      
+                      # *** 3.1.3 Customer ID Picker ----
+                      div(
+                        style = "margin-left: 10px;",
+                        class = "col-md-2",
+                        pickerInput(
+                          inputId = "pr_customer_id",
+                          label = h4("Select Customer ID"),
+                          choices = sort(unique(clv_predictions_data$customer_id)),
+                          selected = sort(unique(clv_predictions_data$customer_id)),
+                          multiple = TRUE,
+                          options = list(
+                            `actions-box` = TRUE,
+                            `deselct-all-text` = "Deselect All",
+                            `select-all-text` = "Select All",
+                            `none-selected-text` = "Select Purchase Cohort",
+                            `selected-text-format` = "count > 3",
+                            liveSearch = TRUE
+                          )
+                        )
+                      )
+                    ),
+                    
+                    hr(),
+                    
+                    # * 3.2 Action Buttons ----
+                    div(
+                      class = "row",
+                      div(
+                        style = "margin-left: 20px;",
+                        actionButton("apply_pr", "Apply", icon = icon("play"), width = "140px"),
+                        actionButton("reset_pr", "Reset", icon = icon("redo"), width = "140px"),
+                        downloadButton("download_pr", "Download", icon = icon("download"), width = "140px"),
+                        actionButton("help_pr", "Help", icon = icon("question"), width = "140px")
+                      )
+                    )
+                  ) %>% shinyjs::hidden()
+                )
+              )
+            )
+          )
         )
     )
 )
@@ -641,13 +762,14 @@ server <- function(input, output, session) {
     }
   )
   
-  
-  
-  
-  
-
-  
   # **** -----------------------------------------------------------------------
+  
+  # 3.0 PRODUCT RECOMMENDATIONS TAB ----
+  
+  # * 3.1 Toggle Inputs ----
+  shinyjs::onclick(id = "toggle_input_pr", expr = {
+    shinyjs::toggle(id = "pr_inputs", anim = TRUE, animType = "slide")
+  })
   
  
     
