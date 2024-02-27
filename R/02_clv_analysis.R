@@ -41,7 +41,9 @@ con <- dbConnect(RSQLite::SQLite(), dbname = "../data/database.db")
 dbListTables(con)
 
 # * First Purchase Data ----
-first_purchase_tbl <- tbl(con, "first_purchase_tbl") %>% collect() 
+first_purchase_tbl <- tbl(con, "first_purchase_tbl") %>% 
+    collect() %>% 
+    mutate(across(first_purchase_date:first_purchase_quarter, ~ date(.)))
 
 first_purchase_tbl %>% 
     select(customer_id, first_purchase_cohort) %>% 
@@ -52,7 +54,11 @@ first_purchase_tbl %>%
 retail_data_clean_tbl <- tbl(con, "retail_data_clean_tbl") %>% 
     collect() %>% 
     mutate(invoice_date = lubridate::date(invoice_date)) %>% 
-    filter(invoice_date <= as.Date("2011-11-30"))
+    filter(invoice_date <= as.Date("2011-11-30")) %>% 
+    mutate(description = gsub("\"", "", description))
+
+#' Filtering retail_data_clean_tbl for invoice_date <= 2011-11-30
+#' Purchase cohorts after that date have not reached the 90 day maturity
 
 
 # ******************************************************************************
@@ -60,15 +66,14 @@ retail_data_clean_tbl <- tbl(con, "retail_data_clean_tbl") %>%
 # ******************************************************************************
 
 # * Pick Analysis Cohort ----
-analysis_cohort <- "Q1-2010"
+# analysis_cohort <- "Q1-2010"
 
 # * Get Analysis Cohort ----
 analysis_cohort_tbl <- retail_data_clean_tbl %>% 
     left_join(
         first_purchase_tbl %>% 
             select(customer_id, first_purchase_cohort) 
-    ) %>% 
-    filter(first_purchase_cohort %in% analysis_cohort)
+    ) 
 
 analysis_cohort_tbl %>% pull(invoice_date) %>% range()
 
@@ -107,9 +112,9 @@ splits_2_test <- time_series_split(
     cumulative = TRUE
 )
 
-# splits_2_train %>%
-#     tk_time_series_cv_plan() %>%
-#     plot_time_series_cv_plan(invoice_date, sales)
+splits_2_train %>%
+    tk_time_series_cv_plan() %>%
+    plot_time_series_cv_plan(invoice_date, log1p(sales), .interactive = FALSE)
 
 
 # * Make Target Data ----
@@ -179,6 +184,17 @@ test_tbl <- training(splits_2_test) %>%
     ) %>%
     mutate(spend_90_flag = as.factor(spend_90_flag))
 
+retail_data_clean_tbl %>% 
+    filter(! customer_id %in% ids_train) %>% 
+    group_by(customer_id) %>% 
+    summarise(
+        recency     = (max(invoice_date) - max_date_train) / ddays(1),
+        frequency   = n(),
+        sales_sum   = sum(sales, na.rm = TRUE),
+        sales_mean  = mean(sales, na.rm = TRUE)
+    )
+    
+
 
 # * Recipes ----
 
@@ -220,7 +236,8 @@ predictions_test_tbl <-  bind_cols(
 ) %>%
     bind_cols(test_tbl) %>%
     select(starts_with(".pred"), starts_with("spend_"), everything()) %>% 
-    mutate(spend_actual_vs_pred = spend_90_total - .pred_total)
+    mutate(spend_actual_vs_pred = spend_90_total - .pred_total) %>% 
+    mutate(recency = abs(recency))
 
 # ** Accuracy Metrics ----
 predictions_test_tbl %>%
@@ -235,14 +252,55 @@ predictions_test_tbl %>%
 
 
 # * VIP ----
-vip(wflw_spend_prob_xgb$fit$fit)
+vip(wflw_spend_prob_xgb$fit$fit) + 
+    theme_bw() +
+    labs(title = "VIP: 90-Day Spend Total Model", y = "Features")
 
-vip(wflw_spend_total_xgb$fit$fit)
+vip(wflw_spend_total_xgb$fit$fit) +
+    theme_bw() +
+    labs(title = "VIP: 90-Day Spend Probability Model", y = "Features")
 
 
 # ******************************************************************************
-# FORMAT PREDICTIONS TABLE ----
+# CONCLUSIONS / RECOMMENDATIONS ----
 # ******************************************************************************
+
+# * Conclusions: VIP ----
+#'   The most important features for predicting 90-day spend are price sum, recency.
+#'   If the goal is to get customers to spend more, then focus on the customers who
+#'   have been spending more and more recently in the last 90 days.
+#'   
+#'   Conversely the most important features for predicting 90-day spend prob are
+#'   recency and frequency. If the goal is to retain customers, then focus on increasing 
+#'   recency and frequency.
+
+
+# * Recommendations: Spend ----
+#' 1 -  Which customers have the highest spend probability in the next 90 days?
+#'    - Target for new products similar to what they have purchased in the past.
+#'    - Data: sort by .pred_prob descending
+
+predictions_test_tbl %>% 
+    arrange(desc(.pred_prob))
+
+
+#' 2 - Which customers have recently purchased but are unlikely to buy?
+#'   - Incentive actions to increase spend prob
+#'   - Provide discounts, encourage referring a friend, nurture by letting them know what's coming
+#'   - Data: filter by recency < 90 and .pred_prob < 0.2, sort by .pred_prob descending
+
+predictions_test_tbl %>% 
+    filter(recency < 90, .pred_prob < 0.2) %>% 
+    arrange(desc(.pred_prob))
+
+   
+#' 3 - Which customers are missed opportunities
+#'   - Send bundle offers encouraging volume purchases
+#'   - Data: filter by spend_90_total == 0, sort by .pred_total descending
+
+predictions_test_tbl %>% 
+    filter(spend_90_total == 0) %>% 
+    arrange(desc(.pred_total))
 
 
 # ******************************************************************************
@@ -256,7 +314,7 @@ clv_artifacts_list <- list(
     # models
     models = list(
         spend_model  = wflw_spend_total_xgb,
-        prob_model = wflw_spend_prob_xgb
+        prob_model   = wflw_spend_prob_xgb
     ),
     
     # data
@@ -267,7 +325,11 @@ clv_artifacts_list <- list(
     )
 )
 
-# clv_artifacts_list %>% write_rds("../artifacts/clv_artifacts_list.rds")
+clv_artifacts_list %>% write_rds("../artifacts/clv_artifacts_list.rds")
+
+clv_artifacts_list %>% write_rds("../shiny_app/app_artifacts/clv_artifacts_list.rds")
+
+clv_artifacts_list_saved <- read_rds("../artifacts/clv_artifacts_list.rds")
 
 
 

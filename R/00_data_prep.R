@@ -50,7 +50,8 @@ retail_data_clean_tbl <- retail_data_raw_tbl %>%
         "EIRE", "Channel Islands", "RSA", "West Indies"
     )) %>% 
     as_tibble() %>% 
-    distinct()
+    distinct() %>% 
+    mutate(invoice_date = as.character(invoice_date))
 
 # dbWriteTable(con, "retail_data_clean_tbl", retail_data_clean_tbl, overwrite = TRUE)
 
@@ -63,7 +64,8 @@ retail_data_clean_tbl <- retail_data_raw_tbl %>%
 # retail_data_clean_tbl <- tbl(con, "retail_data_clean_tbl")
 
 first_purchase_tbl <- retail_data_clean_tbl %>% 
-    #filter(customer_id %in% c(12346, 12347)) %>% 
+    #filter(customer_id %in% c(12346, 12347)) %>%
+    mutate(invoice_date = date(invoice_date)) %>% 
     distinct() %>% 
     select(invoice_date, customer_id) %>% 
     distinct() %>% 
@@ -90,7 +92,8 @@ first_purchase_tbl <- retail_data_clean_tbl %>%
     rename(
         first_purchase_date = invoice_date,
         first_purchase_quarter = quarter_start
-    )
+    ) %>% 
+    mutate_if(is.Date, as.character)
 
 # dbWriteTable(con, "first_purchase_tbl", first_purchase_tbl, overwrite = TRUE)
 
